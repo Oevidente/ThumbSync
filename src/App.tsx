@@ -50,7 +50,7 @@ export default function App() {
       case "progress":
         return <ProgressView pendingFiles={analysisData?.pendingFiles || []} />;
       case "list":
-        return <ListView gameListData={analysisData?.gameListData} />;
+        return <ListView gameListData={analysisData?.gameListData} onRefresh={runAnalysis} />;
       case "settings":
         return <SettingsView config={config} onSave={fetchConfig} />;
       default:
