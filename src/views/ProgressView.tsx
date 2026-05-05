@@ -1,5 +1,5 @@
 import { GlassCard } from "../components/GlassCard.tsx";
-import { Play, Square, CheckCircle, ExternalLink, MessageCircle, AlertCircle, Loader2, Clock } from "lucide-react";
+import { Play, Square, CheckCircle, ExternalLink, MessageCircle, AlertCircle, Loader2, Clock, Zap, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 
@@ -8,6 +8,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [sendLimit, setSendLimit] = useState(16);
   const [isStarting, setIsStarting] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [selectedMode, setSelectedMode] = useState<'scheduled' | 'immediate' | 'watch'>('scheduled');
 
   const fetchStatus = async () => {
     try {
@@ -28,7 +29,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
     return () => clearInterval(timer);
   }, []);
 
-  const startProcess = async () => {
+  const startScheduled = async () => {
     setIsStarting(true);
     try {
       await fetch("/api/copy/start", {
@@ -46,6 +47,45 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
     }
   };
 
+  const startImmediate = async () => {
+    if (!window.confirm(`Tem certeza que deseja copiar IMEDIATAMENTE todos os ${pendingFiles.length} arquivos pendentes?`)) {
+        return;
+    }
+    setIsStarting(true);
+    try {
+      await fetch("/api/copy/sync-immediate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          files: pendingFiles
+        })
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const startWatch = async () => {
+    setIsStarting(true);
+    try {
+      await fetch("/api/copy/watch-start", {
+        method: "POST"
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const startProcess = () => {
+    if (selectedMode === 'scheduled') startScheduled();
+    else if (selectedMode === 'immediate') startImmediate();
+    else if (selectedMode === 'watch') startWatch();
+  };
+
   const stopProcess = async () => {
     await fetch("/api/copy/stop", { method: "POST" });
   };
@@ -60,30 +100,76 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
 
   const isRunning = status.status === 'running';
   const isFinished = status.status === 'finished';
+  const currentMode = status.mode || selectedMode;
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Execução</h1>
-        <p className="text-gray-400">Controle o processo de cópia e agendamento.</p>
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Sincronização e Progresso</h1>
+        <p className="text-gray-400">Controle o método de cópia dos arquivos pendentes.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <GlassCard className="lg:col-span-1 h-fit">
+        <GlassCard className="lg:col-span-1 h-fit transform transition-all duration-300">
           <h3 className="text-xl font-semibold mb-6 flex items-center gap-2">
-            Configuração de Lote
+            Modalidade de Envio
           </h3>
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Limite para este envio</label>
-              <input
-                type="number"
-                disabled={isRunning}
-                value={sendLimit}
-                onChange={(e) => setSendLimit(parseInt(e.target.value))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-fluent-accent disabled:opacity-50"
-              />
-              <p className="text-[10px] text-gray-500 mt-2 italic">Dica: O padrão recomendado é 17 arquivos.</p>
+            <div className="flex bg-white/5 rounded-lg p-1 gap-1">
+                <button 
+                  disabled={isRunning}
+                  onClick={() => setSelectedMode('scheduled')} 
+                  className={`flex-1 rounded-md py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all ${selectedMode === 'scheduled' ? 'bg-fluent-accent text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} disabled:opacity-50`}
+                >
+                    <Clock className="w-3.5 h-3.5" />
+                    Lote
+                </button>
+                <button 
+                  disabled={isRunning}
+                  onClick={() => setSelectedMode('immediate')} 
+                  className={`flex-1 rounded-md py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all ${selectedMode === 'immediate' ? 'bg-fluent-accent text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} disabled:opacity-50`}
+                >
+                    <Zap className="w-3.5 h-3.5" />
+                    Imediata
+                </button>
+                <button 
+                  disabled={isRunning}
+                  onClick={() => setSelectedMode('watch')} 
+                  className={`flex-1 rounded-md py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all ${selectedMode === 'watch' ? 'bg-fluent-accent text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} disabled:opacity-50`}
+                >
+                    <Activity className="w-3.5 h-3.5" />
+                    Standby
+                </button>
+            </div>
+
+            <div className="min-h-[100px]">
+                {selectedMode === 'scheduled' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                        <div>
+                            <label className="block text-sm text-gray-400 mb-2">Limite para este envio (Lote)</label>
+                            <input
+                                type="number"
+                                disabled={isRunning}
+                                value={sendLimit}
+                                onChange={(e) => setSendLimit(parseInt(e.target.value))}
+                                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-fluent-accent disabled:opacity-50"
+                            />
+                            <p className="text-[10px] text-gray-500 mt-2 italic">A cópia será faseada nas janelas de horário permitidas.</p>
+                        </div>
+                    </motion.div>
+                )}
+                {selectedMode === 'immediate' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <p className="text-sm text-gray-300">Copia <span className="font-bold text-white">{pendingFiles.length}</span> arquivos pendentes de uma só vez, sem atrasos.</p>
+                        <p className="text-[10px] text-orange-400 mt-2 italic font-semibold">Uma confirmação será pedida antes de iniciar.</p>
+                    </motion.div>
+                )}
+                {selectedMode === 'watch' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <p className="text-sm text-gray-300">A pasta de origem será monitorada continuamente. Novos arquivos serão copiados automaticamente.</p>
+                        <p className="text-[10px] text-blue-400 mt-2 italic font-semibold">O sistema ficará em modo de vigia a cada 5 segundos.</p>
+                    </motion.div>
+                )}
             </div>
 
             {isRunning ? (
@@ -96,12 +182,12 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
               </button>
             ) : (
               <button
-                disabled={pendingFiles.length === 0 || isStarting}
+                disabled={(selectedMode !== 'watch' && pendingFiles.length === 0) || isStarting}
                 onClick={startProcess}
-                className="w-full py-3 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent-hover transition-all flex items-center justify-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed group"
+                className={`w-full py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2 font-semibold group disabled:opacity-50 disabled:cursor-not-allowed ${selectedMode === 'watch' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-fluent-accent hover:bg-fluent-accent-hover'}`}
               >
                 {isStarting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4 fill-current group-hover:scale-110 transition-transform" />}
-                Iniciar Sincronização
+                {selectedMode === 'watch' ? 'Iniciar Modo Standby' : 'Iniciar Sincronização'}
               </button>
             )}
           </div>
@@ -120,20 +206,34 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">{isFinished ? "Concluído" : "Processando..."}</span>
-                  <span className="font-bold">{status.progress}%</span>
-                </div>
-                <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
-                  <motion.div
-                    className="h-full bg-fluent-accent shadow-[0_0_15px_#0078d4]"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${status.progress}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-              </div>
+              {currentMode !== 'watch' && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">{isFinished ? "Concluído" : "Processando..."}</span>
+                      <span className="font-bold">{status.progress}%</span>
+                    </div>
+                    <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                      <motion.div
+                        className="h-full bg-fluent-accent shadow-[0_0_15px_#0078d4]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${status.progress}%` }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                  </div>
+              )}
+
+              {currentMode === 'watch' && (
+                  <div className="flex items-center gap-4 bg-purple-500/10 border border-purple-500/20 p-4 rounded-lg">
+                      <div className="w-10 h-10 rounded-full bg-purple-500/20 flex flex-col items-center justify-center relative">
+                        <Activity className="w-5 h-5 text-purple-400 animate-pulse" />
+                      </div>
+                      <div>
+                          <h4 className="text-white font-bold tracking-tight">Standby Ativo</h4>
+                          <p className="text-sm text-purple-300">Escutando por novos arquivos na origem...</p>
+                      </div>
+                  </div>
+              )}
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-white/5 p-4 rounded-lg border border-white/5">
@@ -145,12 +245,12 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                    <p className="text-2xl font-bold text-red-400">{status.failed}</p>
                 </div>
                 <div className="bg-white/5 p-4 rounded-lg border border-white/5">
-                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">Total Lote</p>
-                   <p className="text-2xl font-bold text-blue-400">{status.total}</p>
+                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{currentMode === 'watch' ? 'Verificações' : 'Total Lote'}</p>
+                   <p className="text-2xl font-bold text-blue-400">{currentMode === 'watch' ? '∞' : status.total}</p>
                 </div>
               </div>
 
-              {isFinished && (
+              {isFinished && currentMode !== 'watch' && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -171,7 +271,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
 
               {isRunning && (
                 <div className="space-y-4">
-                  {status.currentFileWaiting && status.nextCopyAt > now && (
+                  {status.currentFileWaiting && status.nextCopyAt && status.nextCopyAt > now && (
                     <div className="flex items-center gap-4 bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg">
                       <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
                         <Clock className="w-4 h-4 text-orange-400" />
@@ -191,18 +291,18 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
 
                   <div className="space-y-2">
                     <h5 className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Atividade em Tempo Real:</h5>
-                    <div className="h-40 bg-black/30 rounded-lg border border-white/5 p-4 font-mono text-[11px] overflow-y-auto space-y-1 scrollbar-hide">
-                      <div className="text-blue-400 opacity-50 flex gap-2">
-                         <span>[{new Date().toLocaleTimeString()}]</span>
-                         <span>Iniciando sincronização do lote...</span>
-                      </div>
-                      {status.copiedNames?.map((name: string, i: number) => (
+                    <div className="h-40 bg-black/30 rounded-lg border border-white/5 p-4 font-mono text-[11px] overflow-y-auto space-y-1 scrollbar-hide flex flex-col-reverse">
+                      {status.copiedNames && [...status.copiedNames].reverse().map((name: string, i: number) => (
                         <div key={i} className="flex gap-2 text-green-500/80">
                           <span className="opacity-40">[{new Date().toLocaleTimeString()}]</span>
                           <span className="font-semibold">OK:</span>
                           <span>{name} sincronizado com sucesso.</span>
                         </div>
                       ))}
+                      <div className="text-blue-400 opacity-50 flex gap-2">
+                         <span>[{new Date(status.startTime || Date.now()).toLocaleTimeString()}]</span>
+                         <span>{currentMode === 'watch' ? 'Standby iniciado. Aguardando novos arquivos...' : 'Iniciando sincronização...'}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

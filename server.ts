@@ -100,6 +100,7 @@ function buildStretchDelaySchedule(queueLength: number, firstCopyDelayMs: number
 
 // Workflow state
 let currentCopyState: any = null;
+let watchInterval: NodeJS.Timeout | null = null;
 
 function collectWebpFiles(rootDir: string) {
   const results: string[] = [];
@@ -207,11 +208,13 @@ async function startServer() {
         });
 
         const remaining = listedGames.filter(g => !createdGames.has(g.normalized));
+        const readyGames = listedGames.filter(g => createdGames.has(g.normalized));
         gameListData = {
           status: 'ok',
           totalListedGames: listedGames.length,
-          completedGames: listedGames.length - remaining.length,
-          remainingGames: remaining
+          completedGames: readyGames.length,
+          remainingGames: remaining,
+          readyGames: readyGames
         };
       } catch (err) {
         gameListData = { status: 'error', message: (err as Error).message };
@@ -299,6 +302,103 @@ async function startServer() {
     res.json({ status: "started" });
   });
 
+  app.post("/api/copy/sync-immediate", (req, res) => {
+    const { files } = req.body;
+    if (currentCopyState && currentCopyState.status === 'running') {
+      return res.status(400).json({ error: "A copy process is already running." });
+    }
+
+    currentCopyState = {
+      mode: 'immediate',
+      status: 'running',
+      progress: 0,
+      total: files.length,
+      copied: 0,
+      skipped: 0,
+      failed: 0,
+      copiedNames: [],
+      startTime: new Date(),
+      nextCopyAt: 0,
+      currentFileWaiting: null
+    };
+
+    (async () => {
+      for (let i = 0; i < files.length; i++) {
+        if (!currentCopyState || currentCopyState.status !== 'running') break;
+        const file = files[i];
+        try {
+          const destFolder = path.dirname(file.destPath);
+          if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+          fs.copyFileSync(file.sourcePath, file.destPath);
+          currentCopyState.copied++;
+          currentCopyState.copiedNames.push(path.basename(file.relativePath, '.webp'));
+        } catch (err) {
+          currentCopyState.failed++;
+        }
+        currentCopyState.progress = Math.round(((currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped) / currentCopyState.total) * 100);
+      }
+      if (currentCopyState) {
+        currentCopyState.status = 'finished';
+      }
+    })();
+
+    res.json({ status: "started" });
+  });
+
+  app.post("/api/copy/watch-start", (req, res) => {
+    const source = (req.body.source as string) || DEFAULT_SOURCE;
+    const dest = (req.body.dest as string) || DEFAULT_DEST;
+    
+    if (currentCopyState && currentCopyState.status === 'running') {
+      return res.status(400).json({ error: "A copy process is already running." });
+    }
+
+    if (watchInterval) clearInterval(watchInterval);
+
+    currentCopyState = {
+      mode: 'watch',
+      status: 'running',
+      progress: 100,
+      total: 0,
+      copied: 0,
+      skipped: 0,
+      failed: 0,
+      copiedNames: [],
+      startTime: new Date(),
+      nextCopyAt: 0,
+      currentFileWaiting: null
+    };
+
+    watchInterval = setInterval(() => {
+        if (!currentCopyState || currentCopyState.status !== 'running' || currentCopyState.mode !== 'watch') {
+            if (watchInterval) {
+              clearInterval(watchInterval);
+              watchInterval = null;
+            }
+            return;
+        }
+
+        const data = collectComparisonData(source, dest);
+        const { pendingFiles } = data;
+        
+        if (pendingFiles.length > 0) {
+            for (const file of pendingFiles) {
+                try {
+                    const destFolder = path.dirname(file.destPath);
+                    if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+                    fs.copyFileSync(file.sourcePath, file.destPath);
+                    currentCopyState.copied++;
+                    currentCopyState.copiedNames.push(path.basename(file.relativePath, '.webp'));
+                } catch (err) {
+                    currentCopyState.failed++;
+                }
+            }
+        }
+    }, 5000);
+
+    res.json({ status: "started" });
+  });
+
   app.get("/api/copy/status", (req, res) => {
     res.json(currentCopyState || { status: 'idle' });
   });
@@ -306,6 +406,10 @@ async function startServer() {
   app.post("/api/copy/stop", (req, res) => {
     if (currentCopyState) {
         currentCopyState.status = 'stopped';
+    }
+    if (watchInterval) {
+        clearInterval(watchInterval);
+        watchInterval = null;
     }
     currentCopyState = null;
     res.json({ status: "stopped" });

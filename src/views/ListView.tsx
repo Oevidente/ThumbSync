@@ -120,9 +120,13 @@ export function ListView({ gameListData, onRefresh }: { gameListData: any, onRef
                       Prontos ({gameListData.completedGames})
                     </h4>
                     <p className="text-xs text-gray-500 mb-2 italic">Jogos que constam na lista e já possuem miniatura.</p>
-                    <div className="flex-1 overflow-y-auto">
-                      {/* Summary text */}
-                      <p className="text-gray-600 text-xs mt-10 text-center">Os arquivos listados constam na pasta de destino.</p>
+                    <div className="flex-1 overflow-y-auto space-y-1 pr-2">
+                       {gameListData.readyGames?.map((game: any, i: number) => (
+                         <div key={i} className="py-1.5 px-2 rounded bg-green-500/10 border border-green-500/20 text-xs text-gray-300 font-sans truncate">
+                           {game.displayName}
+                         </div>
+                       ))}
+                       {gameListData.readyGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pronto!</p>}
                     </div>
                   </div>
                   <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col">
