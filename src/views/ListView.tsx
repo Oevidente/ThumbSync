@@ -107,20 +107,20 @@ export function ListView({ gameListData, onRefresh }: { gameListData: any, onRef
                 value={listContent}
                 onChange={(e) => setListContent(e.target.value)}
                 disabled={isLoading}
-                className="w-full h-full p-4 bg-[#0a0a0a] text-gray-300 font-mono text-sm resize-none outline-none focus:ring-2 focus:ring-inset focus:ring-fluent-accent/50 scrollbar-hide disabled:opacity-50"
+                className="absolute inset-0 p-4 bg-[#0a0a0a] text-gray-300 font-mono text-sm resize-none outline-none focus:ring-2 focus:ring-inset focus:ring-fluent-accent/50 disabled:opacity-50"
                 placeholder="Insira os jogos aqui, um por linha..."
                 spellCheck="false"
               />
             ) : (
-              <div className="w-full h-full p-4 bg-[#0a0a0a]/50 text-gray-400 font-mono text-sm overflow-y-auto scrollbar-hide whitespace-pre-wrap">
+              <div className="absolute inset-0 p-4 bg-[#0a0a0a]/50 text-gray-400 font-mono text-sm whitespace-pre-wrap">
                 <div className="grid grid-cols-2 gap-4 h-full">
-                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col">
-                    <h4 className="font-bold mb-3 flex items-center gap-2 text-green-400">
+                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col min-h-0">
+                    <h4 className="font-bold mb-3 flex items-center gap-2 text-green-400 shrink-0">
                       <CheckCircle className="w-4 h-4" />
                       Prontos ({gameListData.completedGames})
                     </h4>
-                    <p className="text-xs text-gray-500 mb-2 italic">Jogos que constam na lista e já possuem miniatura.</p>
-                    <div className="flex-1 overflow-y-auto space-y-1 pr-2">
+                    <p className="text-xs text-gray-500 mb-2 italic shrink-0">Jogos que constam na lista e já possuem miniatura.</p>
+                    <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
                        {gameListData.readyGames?.map((game: any, i: number) => (
                          <div key={i} className="py-1.5 px-2 rounded bg-green-500/10 border border-green-500/20 text-xs text-gray-300 font-sans truncate">
                            {game.displayName}
@@ -129,13 +129,13 @@ export function ListView({ gameListData, onRefresh }: { gameListData: any, onRef
                        {gameListData.readyGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pronto!</p>}
                     </div>
                   </div>
-                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col">
-                    <h4 className="font-bold mb-3 flex items-center gap-2 text-orange-400">
+                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col min-h-0">
+                    <h4 className="font-bold mb-3 flex items-center gap-2 text-orange-400 shrink-0">
                       <Clock className="w-4 h-4" />
                       Faltando ({gameListData.remainingGames?.length || 0})
                     </h4>
-                    <p className="text-xs text-gray-500 mb-2 italic">Jogos na lista que não foram encontrados nas miniaturas prontas.</p>
-                    <div className="flex-1 overflow-y-auto space-y-1 pr-2">
+                    <p className="text-xs text-gray-500 mb-2 italic shrink-0">Jogos na lista que não foram encontrados nas miniaturas prontas.</p>
+                    <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
                        {gameListData.remainingGames?.map((game: any, i: number) => (
                          <div key={i} className="py-1.5 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate">
                            {game.displayName}
