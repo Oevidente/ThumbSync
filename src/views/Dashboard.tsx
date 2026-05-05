@@ -65,9 +65,9 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
                     <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Galeria de Prioridades</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-4 gap-3">
                        {analysisData.pendingFiles.slice(0, 4).map((f: any, i: number) => (
-                         <div key={i} className="relative aspect-video rounded-lg overflow-hidden group border border-white/10">
+                         <div key={i} className="relative aspect-[2/3] rounded-lg overflow-hidden group border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
                            <img 
                              src={`/api/image?path=${encodeURIComponent(f.sourcePath)}`} 
                              alt={f.relativePath.split('/').pop()}
