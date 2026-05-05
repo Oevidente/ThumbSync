@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --color-fluent-bg: #0f0f0f;
+  --color-fluent-glass: rgba(32, 32, 32, 0.7);
+  --color-fluent-border: rgba(255, 255, 255, 0.1);
+  --color-fluent-accent: #0078d4;
+  --color-fluent-accent-hover: #0086ee;
+}
+
+@layer base {
+  body {
+    @apply bg-fluent-bg text-white font-sans antialiased;
+    background: radial-gradient(circle at 50% -20%, #1a1e2e 0%, #0f0f0f 70%);
+    background-attachment: fixed;
+    height: 100vh;
+    overflow-x: hidden;
+  }
+}
+
+.acrylic {
+  @apply backdrop-blur-2xl bg-fluent-glass border border-fluent-border shadow-2xl;
+}
+
+.mica {
+  @apply bg-[#191919]/95 backdrop-blur-[20px] border-fluent-border;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
