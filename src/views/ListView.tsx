@@ -1,49 +1,149 @@
 import { GlassCard } from "../components/GlassCard.tsx";
-import { List, Download, CheckCircle, Clock } from "lucide-react";
+import { List, Download, CheckCircle, Clock, Edit2, Save, X } from "lucide-react";
+import { useState, useEffect } from "react";
 
-export function ListView({ gameListData }: { gameListData: any }) {
+export function ListView({ gameListData, onRefresh }: { gameListData: any, onRefresh: () => void }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [listContent, setListContent] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      loadListContent();
+    }
+  }, [isEditing]);
+
+  const loadListContent = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/list/content");
+      const data = await res.json();
+      setListContent(data.content || "");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const saveListContent = async () => {
+    setIsLoading(true);
+    try {
+      await fetch("/api/list/content", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ content: listContent }),
+      });
+      setIsEditing(false);
+      onRefresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!gameListData) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Lista de Jogos</h1>
+          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+            <List className="w-8 h-8 text-fluent-accent" />
+            Gestão da Lista
+          </h1>
           <p className="text-gray-400">Gerenciamento da lista mestre (lista.txt).</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent-hover transition-colors text-sm">
-          <Download className="w-4 h-4" />
-          Exportar Pendentes
-        </button>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent-hover transition-colors text-sm font-semibold active:scale-95 shadow-[0_0_15px_rgba(0,120,212,0.3)]">
+            <Download className="w-4 h-4" />
+            Exportar Pendentes
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <GlassCard>
-           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-             <CheckCircle className="text-green-500 w-5 h-5" />
-             Jogos Prontos ({gameListData.completedGames})
-           </h3>
-           <p className="text-sm text-gray-500 mb-4">Estes jogos já possuem miniatura criada ou sincronizada.</p>
-           <div className="h-96 overflow-y-auto pr-2 space-y-2 text-sm text-gray-400">
-              {/* This is a summary based on counts, but logic could show names if provided by API */}
-              <div className="p-10 text-center opacity-30 italic">Visão detalhada disponível no analisador</div>
-           </div>
-        </GlassCard>
-
-        <GlassCard>
-           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-             <Clock className="text-orange-500 w-5 h-5" />
-             Jogos Restantes ({gameListData.remainingGames?.length})
-           </h3>
-           <p className="text-sm text-gray-500 mb-4">Estes são jogos da lista que ainda precisam de miniatura.</p>
-           <div className="h-96 overflow-y-auto pr-2 space-y-1">
-              {gameListData.remainingGames?.map((game: any, i: number) => (
-                <div key={i} className="py-2 px-3 rounded bg-white/5 border border-white/5 text-xs">
-                  {game.displayName}
+      <div className="grid grid-cols-1 gap-6">
+        <GlassCard className="flex flex-col h-[600px] !p-0 overflow-hidden">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+            <h3 className="font-bold flex items-center gap-2">
+              <List className="w-4 h-4 text-fluent-accent" />
+              Conteúdo Bruto (lista.txt)
+            </h3>
+            {!isEditing ? (
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-sm transition-colors border border-white/5 hover:border-white/20 active:scale-95 text-white"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                Editar Arquivo
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setIsEditing(false)}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors border border-transparent hover:bg-white/5 active:scale-95 text-gray-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Cancelar
+                </button>
+                <button 
+                  onClick={saveListContent}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-sm font-medium transition-colors border border-transparent active:scale-95 disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Salvar Alterações
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 relative">
+            {isEditing ? (
+              <textarea
+                value={listContent}
+                onChange={(e) => setListContent(e.target.value)}
+                disabled={isLoading}
+                className="w-full h-full p-4 bg-[#0a0a0a] text-gray-300 font-mono text-sm resize-none outline-none focus:ring-2 focus:ring-inset focus:ring-fluent-accent/50 scrollbar-hide disabled:opacity-50"
+                placeholder="Insira os jogos aqui, um por linha..."
+                spellCheck="false"
+              />
+            ) : (
+              <div className="w-full h-full p-4 bg-[#0a0a0a]/50 text-gray-400 font-mono text-sm overflow-y-auto scrollbar-hide whitespace-pre-wrap">
+                <div className="grid grid-cols-2 gap-4 h-full">
+                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col">
+                    <h4 className="font-bold mb-3 flex items-center gap-2 text-green-400">
+                      <CheckCircle className="w-4 h-4" />
+                      Prontos ({gameListData.completedGames})
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-2 italic">Jogos que constam na lista e já possuem miniatura.</p>
+                    <div className="flex-1 overflow-y-auto">
+                      {/* Summary text */}
+                      <p className="text-gray-600 text-xs mt-10 text-center">Os arquivos listados constam na pasta de destino.</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col">
+                    <h4 className="font-bold mb-3 flex items-center gap-2 text-orange-400">
+                      <Clock className="w-4 h-4" />
+                      Faltando ({gameListData.remainingGames?.length || 0})
+                    </h4>
+                    <p className="text-xs text-gray-500 mb-2 italic">Jogos na lista que não foram encontrados nas miniaturas prontas.</p>
+                    <div className="flex-1 overflow-y-auto space-y-1 pr-2">
+                       {gameListData.remainingGames?.map((game: any, i: number) => (
+                         <div key={i} className="py-1.5 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate">
+                           {game.displayName}
+                         </div>
+                       ))}
+                       {gameListData.remainingGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pendente!</p>}
+                    </div>
+                  </div>
                 </div>
-              ))}
-              {gameListData.remainingGames?.length === 0 && <p className="text-center py-20 text-gray-500 italic">Nenhum jogo pendente na lista!</p>}
-           </div>
+              </div>
+            )}
+          </div>
         </GlassCard>
       </div>
     </div>

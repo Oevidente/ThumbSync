@@ -304,8 +304,37 @@ async function startServer() {
   });
 
   app.post("/api/copy/stop", (req, res) => {
+    if (currentCopyState) {
+        currentCopyState.status = 'stopped';
+    }
     currentCopyState = null;
     res.json({ status: "stopped" });
+  });
+
+  app.get("/api/list/content", (req, res) => {
+    const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
+    if (!fs.existsSync(listPath)) {
+        return res.json({ content: '' });
+    }
+    try {
+        const content = fs.readFileSync(listPath, 'utf8');
+        res.json({ content });
+    } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post("/api/list/content", (req, res) => {
+    const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
+    const { content } = req.body;
+    try {
+        const destFolder = path.dirname(listPath);
+        if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+        fs.writeFileSync(listPath, content, 'utf8');
+        res.json({ status: "success" });
+    } catch (err) {
+        res.status(500).json({ error: (err as Error).message });
+    }
   });
 
   // Vite middleware for development
