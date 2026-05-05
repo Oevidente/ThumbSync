@@ -78,7 +78,7 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
                            />
                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
                              <span className="text-[10px] truncate w-full font-medium text-white drop-shadow-md">
-                               {f.relativePath.split('/').pop().replace('.webp', '')}
+                               {f.relativePath.split(/[\/\\]/).pop().replace('.webp', '')}
                              </span>
                            </div>
                          </div>

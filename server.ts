@@ -342,7 +342,20 @@ async function startServer() {
     if (!imagePath || !fs.existsSync(imagePath)) {
       return res.status(404).send("Not found");
     }
-    res.sendFile(path.resolve(imagePath));
+    try {
+      const ext = path.extname(imagePath).toLowerCase();
+      let contentType = 'image/jpeg';
+      if (ext === '.webp') contentType = 'image/webp';
+      else if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.svg') contentType = 'image/svg+xml';
+      
+      res.setHeader('Content-Type', contentType);
+      const fileStream = fs.createReadStream(imagePath);
+      fileStream.pipe(res);
+    } catch (err) {
+      console.error("Error sending file:", err);
+      res.status(500).send("Error reading file");
+    }
   });
 
   // Vite middleware for development

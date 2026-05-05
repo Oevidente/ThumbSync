@@ -74,8 +74,8 @@ export function Analyzer({ analysisData, runAnalysis, isLoading }: { analysisDat
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-medium">{file.relativePath.split('/').pop().replace('.webp', '')}</span>
-                        <span className="text-xs text-gray-500">{file.relativePath.split('/').slice(0, -1).join(' / ') || 'Raiz'}</span>
+                        <span className="font-medium">{file.relativePath.split(/[\/\\]/).pop().replace('.webp', '')}</span>
+                        <span className="text-xs text-gray-500">{file.relativePath.split(/[\/\\]/).slice(0, -1).join(' / ') || 'Raiz'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
