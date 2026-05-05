@@ -64,12 +64,23 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
              ) : (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Arquivos Prioritários</p>
-                    <div className="space-y-2">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Galeria de Prioridades</p>
+                    <div className="grid grid-cols-2 gap-2">
                        {analysisData.pendingFiles.slice(0, 4).map((f: any, i: number) => (
-                         <div key={i} className="flex items-center gap-3 text-xs bg-white/5 p-2.5 rounded-xl border border-white/5 group hover:border-fluent-accent/30 transition-colors">
-                            <div className="w-2 h-2 rounded-full bg-blue-400 group-hover:shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
-                            <span className="truncate flex-1 font-medium text-gray-300">{f.relativePath.split('/').pop()}</span>
+                         <div key={i} className="relative aspect-video rounded-lg overflow-hidden group border border-white/10">
+                           <img 
+                             src={`/api/image?path=${encodeURIComponent(f.sourcePath)}`} 
+                             alt={f.relativePath.split('/').pop()}
+                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                             onError={(e) => {
+                               (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIwaHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZmlsbD0iIzY2NiI+V0VCUDwvdGV4dD48L3N2Zz4=';
+                             }}
+                           />
+                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                             <span className="text-[10px] truncate w-full font-medium text-white drop-shadow-md">
+                               {f.relativePath.split('/').pop().replace('.webp', '')}
+                             </span>
+                           </div>
                          </div>
                        ))}
                     </div>

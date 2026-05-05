@@ -337,6 +337,14 @@ async function startServer() {
     }
   });
 
+  app.get("/api/image", (req, res) => {
+    const imagePath = req.query.path as string;
+    if (!imagePath || !fs.existsSync(imagePath)) {
+      return res.status(404).send("Not found");
+    }
+    res.sendFile(path.resolve(imagePath));
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

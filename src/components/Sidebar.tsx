@@ -54,7 +54,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       
       <div className="mt-auto px-2 py-4 text-[11px] uppercase tracking-wider text-[#a0a0a0] font-bold flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-        v1.0.1 Stable
+        v1.0.2 Stable
       </div>
     </div>
   );

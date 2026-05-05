@@ -63,9 +63,14 @@ export function Analyzer({ analysisData, runAnalysis, isLoading }: { analysisDat
                 {filteredFiles.map((file: any, i: number) => (
                   <tr key={i} className="hover:bg-white/[0.06] transition-colors group relative overflow-hidden">
                     <td className="px-6 py-4 relative z-10">
-                       <div className="w-12 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-gray-600">
-                         WEBP
-                       </div>
+                       <img 
+                         src={`/api/image?path=${encodeURIComponent(file.sourcePath)}`} 
+                         alt="Thumb" 
+                         className="w-16 h-10 object-cover rounded shadow-md border border-white/10" 
+                         onError={(e) => {
+                           (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIwaHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZmlsbD0iIzY2NiI+V0VCUDwvdGV4dD48L3N2Zz4=';
+                         }}
+                       />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
