@@ -9,6 +9,10 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [isStarting, setIsStarting] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [selectedMode, setSelectedMode] = useState<'scheduled' | 'immediate' | 'watch'>('scheduled');
+  const [startHour, setStartHour] = useState(14);
+  const [startMinute, setStartMinute] = useState(0);
+  const [endHour, setEndHour] = useState(17);
+  const [endMinute, setEndMinute] = useState(30);
 
   const fetchStatus = async () => {
     try {
@@ -37,7 +41,13 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           files: pendingFiles.slice(0, sendLimit),
-          settings: { sendLimit }
+          settings: { 
+            sendLimit,
+            startHour,
+            startMinute,
+            endHour,
+            endMinute
+          }
         })
       });
     } catch (e) {
@@ -154,8 +164,43 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                                 onChange={(e) => setSendLimit(parseInt(e.target.value))}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-fluent-accent disabled:opacity-50"
                             />
-                            <p className="text-[10px] text-gray-500 mt-2 italic">A cópia será faseada nas janelas de horário permitidas.</p>
                         </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Início</label>
+                                <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
+                                    <input 
+                                        type="number" min="0" max="23"
+                                        disabled={isRunning} value={startHour} onChange={e => setStartHour(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                                    />
+                                    <span className="py-2 text-gray-500">:</span>
+                                    <input 
+                                        type="number" min="0" max="59"
+                                        disabled={isRunning} value={startMinute} onChange={e => setStartMinute(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Fim</label>
+                                <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
+                                    <input 
+                                        type="number" min="0" max="23"
+                                        disabled={isRunning} value={endHour} onChange={e => setEndHour(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                                    />
+                                    <span className="py-2 text-gray-500">:</span>
+                                    <input 
+                                        type="number" min="0" max="59"
+                                        disabled={isRunning} value={endMinute} onChange={e => setEndMinute(parseInt(e.target.value) || 0)}
+                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 italic">A cópia será faseada no intervalo de tempo especificado (baseado no relógio do sistema).</p>
                     </motion.div>
                 )}
                 {selectedMode === 'immediate' && (

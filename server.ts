@@ -42,12 +42,12 @@ function floorToSecond(ms: number) {
   return Math.floor(ms / 1000) * 1000;
 }
 
-function buildWorkWindow(now = new Date()) {
+function buildWorkWindow(now = new Date(), settings: any = {}) {
   const startAt = new Date(now);
-  startAt.setHours(WORK_START_HOUR, WORK_START_MINUTE, 0, 0);
+  startAt.setHours(settings.startHour ?? WORK_START_HOUR, settings.startMinute ?? WORK_START_MINUTE, 0, 0);
 
   const endAt = new Date(now);
-  endAt.setHours(WORK_END_HOUR, WORK_END_MINUTE, 0, 0);
+  endAt.setHours(settings.endHour ?? WORK_END_HOUR, settings.endMinute ?? WORK_END_MINUTE, 0, 0);
 
   const firstCopyReleaseAt = new Date(
     startAt.getTime() + FIRST_COPY_RELEASE_MINUTES_AFTER_START * 60 * 1000,
@@ -232,7 +232,7 @@ async function startServer() {
 
     // Calcula os atrasos baseados na janela de tempo original
     let delays: number[] = [];
-    const windowInfo = buildWorkWindow();
+    const windowInfo = buildWorkWindow(new Date(), settings);
     
     // Simplificando o fallback para garantir que funcione fora do horário comercial (para testes na UI)
     // Se estiver fora do horário, simula uma janela de 10 minutos para fins de demonstração
@@ -242,7 +242,7 @@ async function startServer() {
     if (windowInfo.now.getTime() >= windowInfo.endAt.getTime() || windowInfo.now.getTime() < windowInfo.startAt.getTime()) {
       // Estamos fora do horário de trabalho pretendido. Para a UI não congelar eternamente,
       // usaremos um atraso fixo e rápido
-      console.log("Fora do horário (14:00 - 17:30). Usando atrasos simulados rápidos (3-5s).");
+      console.log(`Fora do horário (${windowInfo.startAt.getHours()}:${String(windowInfo.startAt.getMinutes()).padStart(2, '0')} - ${windowInfo.endAt.getHours()}:${String(windowInfo.endAt.getMinutes()).padStart(2, '0')}). Usando atrasos simulados rápidos (3-5s).`);
       delays = files.map(() => Math.random() * 2000 + 3000);
     } else {
       console.log(`Dentro do horário. Calculando schedule para ${availableWindowMs} ms disponíveis.`);
