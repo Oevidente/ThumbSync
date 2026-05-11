@@ -49,6 +49,21 @@ function buildWorkWindow(now = new Date(), settings: any = {}) {
   const endAt = new Date(now);
   endAt.setHours(settings.endHour ?? WORK_END_HOUR, settings.endMinute ?? WORK_END_MINUTE, 0, 0);
 
+  // Se já passou do fim do expediente de hoje, a janela é amanhã.
+  if (now.getTime() > endAt.getTime()) {
+      startAt.setDate(startAt.getDate() + 1);
+      endAt.setDate(endAt.getDate() + 1);
+  }
+
+  // Se cruza a meia-noite
+  if (startAt.getTime() > endAt.getTime()) {
+      if (now.getTime() <= endAt.getTime()) {
+          startAt.setDate(startAt.getDate() - 1);
+      } else {
+          endAt.setDate(endAt.getDate() + 1);
+      }
+  }
+
   const firstCopyReleaseAt = new Date(
     startAt.getTime() + FIRST_COPY_RELEASE_MINUTES_AFTER_START * 60 * 1000,
   );
@@ -61,6 +76,23 @@ function buildWorkWindow(now = new Date(), settings: any = {}) {
     firstCopyReleaseAt,
     fullWindowMs,
   };
+}
+
+// Function to block flow until time window opens
+async function waitForWindow(state: any, settings: any) {
+    while (state && state.status === 'running') {
+        const win = buildWorkWindow(new Date(), settings);
+        const now = new Date();
+        if (now.getTime() >= win.startAt.getTime() && now.getTime() <= win.endAt.getTime()) {
+            state.waitingForWindow = false;
+            return true;
+        }
+        
+        state.waitingForWindow = true;
+        state.nextCopyAt = win.startAt.getTime();
+        await new Promise(r => setTimeout(r, 2000));
+    }
+    return false;
 }
 
 function buildStretchDelaySchedule(queueLength: number, firstCopyDelayMs: number, availableWindowMs: number) {
@@ -230,26 +262,8 @@ async function startServer() {
       return res.status(400).json({ error: "A copy process is already running." });
     }
 
-    // Calcula os atrasos baseados na janela de tempo original
-    let delays: number[] = [];
-    const windowInfo = buildWorkWindow(new Date(), settings);
-    
-    // Simplificando o fallback para garantir que funcione fora do horário comercial (para testes na UI)
-    // Se estiver fora do horário, simula uma janela de 10 minutos para fins de demonstração
-    let availableWindowMs = windowInfo.endAt.getTime() - windowInfo.now.getTime();
-    let firstCopyDelayMs = Math.max(0, windowInfo.firstCopyReleaseAt.getTime() - windowInfo.now.getTime());
-    
-    if (windowInfo.now.getTime() >= windowInfo.endAt.getTime() || windowInfo.now.getTime() < windowInfo.startAt.getTime()) {
-      // Estamos fora do horário de trabalho pretendido. Para a UI não congelar eternamente,
-      // usaremos um atraso fixo e rápido
-      console.log(`Fora do horário (${windowInfo.startAt.getHours()}:${String(windowInfo.startAt.getMinutes()).padStart(2, '0')} - ${windowInfo.endAt.getHours()}:${String(windowInfo.endAt.getMinutes()).padStart(2, '0')}). Usando atrasos simulados rápidos (3-5s).`);
-      delays = files.map(() => Math.random() * 2000 + 3000);
-    } else {
-      console.log(`Dentro do horário. Calculando schedule para ${availableWindowMs} ms disponíveis.`);
-      delays = buildStretchDelaySchedule(files.length, firstCopyDelayMs, availableWindowMs);
-    }
-
     currentCopyState = {
+      mode: 'scheduled',
       status: 'running',
       progress: 0,
       total: files.length,
@@ -262,11 +276,23 @@ async function startServer() {
       currentFileWaiting: null
     };
 
-    // Background copy process simulation (keeping logic)
     (async () => {
+      // First, block if outside the work window
+      if (!await waitForWindow(currentCopyState, settings)) return;
+
+      const windowInfo = buildWorkWindow(new Date(), settings);
+      const availableWindowMs = windowInfo.endAt.getTime() - windowInfo.now.getTime();
+      const firstCopyDelayMs = Math.max(0, windowInfo.firstCopyReleaseAt.getTime() - windowInfo.now.getTime());
+      
+      console.log(`[Lote] Calculando schedule para ${availableWindowMs} ms disponíveis.`);
+      const delays = buildStretchDelaySchedule(files.length, firstCopyDelayMs, availableWindowMs);
+      
       for (let i = 0; i < files.length; i++) {
         if (!currentCopyState || currentCopyState.status !== 'running') break;
         
+        // Re-check window just in case (though it should be mostly inside if calculated right)
+        if (!await waitForWindow(currentCopyState, settings)) return;
+
         const file = files[i];
         const delay = delays[i] || 0;
         
@@ -274,7 +300,7 @@ async function startServer() {
         currentCopyState.currentFileWaiting = file.relativePath.split('/').pop();
         
         if (delay > 0) {
-            const step = 1000; // Aguarda 1 segundo por vez para poder ser interrompido
+            const step = 2000;
             for(let waited = 0; waited < delay; waited += step) {
                 if (!currentCopyState || currentCopyState.status !== 'running') return;
                 await new Promise(r => setTimeout(r, Math.min(step, delay - waited)));
@@ -303,7 +329,7 @@ async function startServer() {
   });
 
   app.post("/api/copy/sync-immediate", (req, res) => {
-    const { files } = req.body;
+    const { files, settings } = req.body;
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -325,6 +351,10 @@ async function startServer() {
     (async () => {
       for (let i = 0; i < files.length; i++) {
         if (!currentCopyState || currentCopyState.status !== 'running') break;
+
+        // Block if outside window! (The user wants this to be strictly respected too)
+        if (!await waitForWindow(currentCopyState, settings)) return;
+
         const file = files[i];
         try {
           const destFolder = path.dirname(file.destPath);
@@ -348,6 +378,7 @@ async function startServer() {
   app.post("/api/copy/watch-start", (req, res) => {
     const source = (req.body.source as string) || DEFAULT_SOURCE;
     const dest = (req.body.dest as string) || DEFAULT_DEST;
+    const settings = req.body.settings || {};
     
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
@@ -369,6 +400,7 @@ async function startServer() {
       currentFileWaiting: null
     };
 
+    // Use interval but skip logic if outside time window
     watchInterval = setInterval(() => {
         if (!currentCopyState || currentCopyState.status !== 'running' || currentCopyState.mode !== 'watch') {
             if (watchInterval) {
@@ -377,6 +409,16 @@ async function startServer() {
             }
             return;
         }
+
+        const win = buildWorkWindow(new Date(), settings);
+        const now = new Date();
+        if (now.getTime() < win.startAt.getTime() || now.getTime() > win.endAt.getTime()) {
+             currentCopyState.waitingForWindow = true;
+             currentCopyState.nextCopyAt = win.startAt.getTime();
+             return; // Do nothing until time window shifts
+        }
+        
+        currentCopyState.waitingForWindow = false;
 
         const data = collectComparisonData(source, dest);
         const { pendingFiles } = data;

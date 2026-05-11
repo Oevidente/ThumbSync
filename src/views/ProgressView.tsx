@@ -67,7 +67,13 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          files: pendingFiles
+          files: pendingFiles,
+          settings: { 
+            startHour,
+            startMinute,
+            endHour,
+            endMinute
+          }
         })
       });
     } catch (e) {
@@ -81,7 +87,16 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
     setIsStarting(true);
     try {
       await fetch("/api/copy/watch-start", {
-        method: "POST"
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: { 
+            startHour,
+            startMinute,
+            endHour,
+            endMinute
+          }
+        })
       });
     } catch (e) {
       console.error(e);
@@ -165,42 +180,6 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-fluent-accent disabled:opacity-50"
                             />
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Início</label>
-                                <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
-                                    <input 
-                                        type="number" min="0" max="23"
-                                        disabled={isRunning} value={startHour} onChange={e => setStartHour(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
-                                    />
-                                    <span className="py-2 text-gray-500">:</span>
-                                    <input 
-                                        type="number" min="0" max="59"
-                                        disabled={isRunning} value={startMinute} onChange={e => setStartMinute(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Fim</label>
-                                <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
-                                    <input 
-                                        type="number" min="0" max="23"
-                                        disabled={isRunning} value={endHour} onChange={e => setEndHour(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
-                                    />
-                                    <span className="py-2 text-gray-500">:</span>
-                                    <input 
-                                        type="number" min="0" max="59"
-                                        disabled={isRunning} value={endMinute} onChange={e => setEndMinute(parseInt(e.target.value) || 0)}
-                                        className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        <p className="text-[10px] text-gray-500 italic">A cópia será faseada no intervalo de tempo especificado (baseado no relógio do sistema).</p>
                     </motion.div>
                 )}
                 {selectedMode === 'immediate' && (
@@ -215,6 +194,42 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                         <p className="text-[10px] text-blue-400 mt-2 italic font-semibold">O sistema ficará em modo de vigia a cada 5 segundos.</p>
                     </motion.div>
                 )}
+
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                    <div>
+                        <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Início</label>
+                        <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
+                            <input 
+                                type="number" min="0" max="23"
+                                disabled={isRunning} value={startHour} onChange={e => setStartHour(parseInt(e.target.value) || 0)}
+                                className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                            />
+                            <span className="py-2 text-gray-500">:</span>
+                            <input 
+                                type="number" min="0" max="59"
+                                disabled={isRunning} value={startMinute} onChange={e => setStartMinute(parseInt(e.target.value) || 0)}
+                                className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Fim</label>
+                        <div className="flex bg-white/5 border border-white/10 rounded-lg focus-within:border-fluent-accent overflow-hidden">
+                            <input 
+                                type="number" min="0" max="23"
+                                disabled={isRunning} value={endHour} onChange={e => setEndHour(parseInt(e.target.value) || 0)}
+                                className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                            />
+                            <span className="py-2 text-gray-500">:</span>
+                            <input 
+                                type="number" min="0" max="59"
+                                disabled={isRunning} value={endMinute} onChange={e => setEndMinute(parseInt(e.target.value) || 0)}
+                                className="w-full bg-transparent px-3 py-2 text-center focus:outline-none appearance-none"
+                            />
+                        </div>
+                    </div>
+                </div>
+                <p className="text-[10px] text-gray-500 italic mt-2">A cópia apenas ocorrerá no intervalo de tempo especificado (baseado no relógio do sistema).</p>
             </div>
 
             {isRunning ? (
@@ -316,23 +331,40 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
 
               {isRunning && (
                 <div className="space-y-4">
-                  {status.currentFileWaiting && status.nextCopyAt && status.nextCopyAt > now && (
+                  {status.waitingForWindow && status.nextCopyAt > now ? (
                     <div className="flex items-center gap-4 bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg">
                       <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center">
                         <Clock className="w-4 h-4 text-orange-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Aguardando Janela de Tempo</p>
+                        <p className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Fora do Expediente</p>
+                        <p className="text-sm font-medium">
+                          Aguardando início do horário de trabalho configurado...
+                        </p>
+                      </div>
+                      <div className="text-xl font-bold font-mono text-orange-400">
+                        {Math.floor(Math.max(0, status.nextCopyAt - now) / 3600000).toString().padStart(2, '0')}:
+                        {Math.floor((Math.max(0, status.nextCopyAt - now) % 3600000) / 60000).toString().padStart(2, '0')}:
+                        {Math.floor((Math.max(0, status.nextCopyAt - now) % 60000) / 1000).toString().padStart(2, '0')}
+                      </div>
+                    </div>
+                  ) : status.currentFileWaiting && status.nextCopyAt && status.nextCopyAt > now ? (
+                    <div className="flex items-center gap-4 bg-blue-500/10 border border-blue-500/20 p-4 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                        <Clock className="w-4 h-4 text-blue-400 animate-spin-slow" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[10px] text-blue-400 uppercase tracking-widest font-bold">Intervalo entre Arquivos</p>
                         <p className="text-sm font-medium">
                           Próximo arquivo: <span className="text-white">{status.currentFileWaiting}</span>
                         </p>
                       </div>
-                      <div className="text-xl font-bold font-mono text-orange-400">
+                      <div className="text-xl font-bold font-mono text-blue-400">
                         {Math.floor(Math.max(0, status.nextCopyAt - now) / 60000).toString().padStart(2, '0')}:
                         {Math.floor((Math.max(0, status.nextCopyAt - now) % 60000) / 1000).toString().padStart(2, '0')}
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="space-y-2">
                     <h5 className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Atividade em Tempo Real:</h5>
