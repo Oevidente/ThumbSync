@@ -1,6 +1,7 @@
 import { GlassCard } from "../components/GlassCard.tsx";
 import { RefreshCw, FileCheck, AlertCircle, Clock, Package, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
+import { Fragment } from "react";
 
 export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRefresh: () => void }) {
   if (!analysisData) return <div className="p-10 text-center opacity-50">Carregando dados...</div>;
@@ -29,17 +30,19 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <GlassCard key={i} hover className="flex items-start gap-5 !p-5 relative">
-            <div className={`absolute -inset-1 ${stat.glow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`} />
-            <div className={`p-3 rounded-xl bg-white/5 ${stat.color} relative z-10`}>
-              <stat.icon className="w-6 h-6" />
-            </div>
-            <div className="relative z-10">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">{stat.label}</p>
-              <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
-            </div>
-          </GlassCard>
+        {stats.map((stat) => (
+          <Fragment key={stat.label}>
+            <GlassCard hover className="flex items-start gap-5 !p-5 relative">
+              <div className={`absolute -inset-1 ${stat.glow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`} />
+              <div className={`p-3 rounded-xl bg-white/5 ${stat.color} relative z-10`}>
+                <stat.icon className="w-6 h-6" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">{stat.label}</p>
+                <p className="text-2xl font-bold tracking-tight">{stat.value}</p>
+              </div>
+            </GlassCard>
+          </Fragment>
         ))}
       </div>
 

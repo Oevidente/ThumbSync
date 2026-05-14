@@ -181,6 +181,10 @@ function cleanGameListLine(line: string) {
   return line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
 }
 
+function isProviderListLine(line: string) {
+  return /^provedor\s*:\s*\S/i.test(line);
+}
+
 function collectComparisonData(sourceDir: string, destDir: string) {
   const sourceFiles = collectWebpFiles(sourceDir);
   const comparedFiles = sourceFiles.map((sourcePath) => {
@@ -233,7 +237,7 @@ async function startServer() {
 
         content.split(/\r?\n/).forEach(line => {
           const displayName = cleanGameListLine(line);
-          if (!displayName || displayName.startsWith('#') || displayName.includes('?')) return;
+          if (!displayName || displayName.startsWith('#') || displayName.includes('?') || isProviderListLine(displayName)) return;
           const normalized = normalizeGameName(displayName);
           if (!normalized) return;
           listedGames.push({ displayName, normalized });
