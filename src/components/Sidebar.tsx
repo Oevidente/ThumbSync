@@ -1,4 +1,4 @@
-import { Home, Search, Play, Settings, FileText, Database } from "lucide-react";
+import { Home, Search, Play, Settings, FileText, Database, Archive } from "lucide-react";
 import { motion } from "motion/react";
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
     { id: "analyzer", icon: Search, label: "Analisador" },
     { id: "progress", icon: Play, label: "Progresso" },
     { id: "list", icon: FileText, label: "Gestão da Lista" },
+    { id: "records", icon: Archive, label: "Registros" },
     { id: "settings", icon: Settings, label: "Configurações" },
   ];
 

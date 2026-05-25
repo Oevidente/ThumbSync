@@ -1,7 +1,13 @@
 import { GlassCard } from "../components/GlassCard.tsx";
-import { Play, Square, CheckCircle, ExternalLink, MessageCircle, AlertCircle, Loader2, Clock, Zap, Activity } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Play, Square, CheckCircle, MessageCircle, AlertCircle, Loader2, Clock, Zap, Activity, ArrowDownWideNarrow, ArrowUpWideNarrow } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
+
+type CopyOrder = 'newest' | 'oldest';
+
+function getFileModifiedAt(file: any) {
+  return Number(file?.modifiedAtMs ?? file?.syncStatus?.sourceModifiedAtMs ?? 0) || 0;
+}
 
 export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [status, setStatus] = useState<any>({ status: 'idle' });
@@ -9,10 +15,18 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [isStarting, setIsStarting] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [selectedMode, setSelectedMode] = useState<'scheduled' | 'immediate' | 'watch'>('scheduled');
+  const [copyOrder, setCopyOrder] = useState<CopyOrder>('newest');
   const [startHour, setStartHour] = useState(14);
   const [startMinute, setStartMinute] = useState(0);
   const [endHour, setEndHour] = useState(17);
   const [endMinute, setEndMinute] = useState(30);
+
+  const orderedPendingFiles = useMemo(() => {
+    return [...pendingFiles].sort((a, b) => {
+      const diff = getFileModifiedAt(a) - getFileModifiedAt(b);
+      return copyOrder === 'newest' ? -diff : diff;
+    });
+  }, [pendingFiles, copyOrder]);
 
   const fetchStatus = async () => {
     try {
@@ -40,9 +54,10 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          files: pendingFiles.slice(0, sendLimit),
+          files: orderedPendingFiles.slice(0, sendLimit),
           settings: { 
             sendLimit,
+            copyOrder,
             startHour,
             startMinute,
             endHour,
@@ -67,8 +82,9 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
-          files: pendingFiles,
+          files: orderedPendingFiles,
           settings: { 
+            copyOrder,
             startHour,
             startMinute,
             endHour,
@@ -91,6 +107,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           settings: { 
+            copyOrder,
             startHour,
             startMinute,
             endHour,
@@ -165,6 +182,28 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                     <Activity className="w-3.5 h-3.5" />
                     Standby
                 </button>
+            </div>
+
+            <div>
+              <label className="block text-[11px] text-gray-400 mb-1 uppercase tracking-widest font-bold">Ordem</label>
+              <div className="grid grid-cols-2 gap-1 bg-white/5 rounded-lg p-1">
+                <button
+                  disabled={isRunning}
+                  onClick={() => setCopyOrder('newest')}
+                  className={`min-h-10 rounded-md px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all ${copyOrder === 'newest' ? 'bg-fluent-accent text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} disabled:opacity-50`}
+                >
+                  <ArrowDownWideNarrow className="w-3.5 h-3.5" />
+                  Mais recente
+                </button>
+                <button
+                  disabled={isRunning}
+                  onClick={() => setCopyOrder('oldest')}
+                  className={`min-h-10 rounded-md px-3 py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all ${copyOrder === 'oldest' ? 'bg-fluent-accent text-white shadow-md' : 'text-gray-400 hover:text-white hover:bg-white/5'} disabled:opacity-50`}
+                >
+                  <ArrowUpWideNarrow className="w-3.5 h-3.5" />
+                  Mais antigo
+                </button>
+              </div>
             </div>
 
             <div className="min-h-[100px]">

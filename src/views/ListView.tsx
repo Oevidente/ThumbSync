@@ -47,6 +47,17 @@ export function ListView({ gameListData, onRefresh }: { gameListData: any, onRef
 
   if (!gameListData) return null;
 
+  const remainingGroups = gameListData.remainingGamesByProvider ?? (
+    gameListData.remainingGames?.length
+      ? [{ providerName: "Sem provedor", games: gameListData.remainingGames }]
+      : []
+  );
+  const readyGroups = gameListData.readyGamesByProvider ?? (
+    gameListData.readyGames?.length
+      ? [{ providerName: "Sem provedor", games: gameListData.readyGames }]
+      : []
+  );
+
   return (
     <div className="space-y-8 relative">
       <div className="flex justify-between items-end">
@@ -120,30 +131,50 @@ export function ListView({ gameListData, onRefresh }: { gameListData: any, onRef
                       Prontos ({gameListData.completedGames})
                     </h4>
                     <p className="text-xs text-gray-500 mb-2 italic shrink-0">Jogos que constam na lista e já possuem miniatura.</p>
-                    <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                       {gameListData.readyGames?.map((game: any, i: number) => (
-                         <div key={i} className="py-1.5 px-2 rounded bg-green-500/10 border border-green-500/20 text-xs text-gray-300 font-sans truncate">
-                           {game.displayName}
-                         </div>
-                       ))}
-                       {gameListData.readyGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pronto!</p>}
-                    </div>
-                  </div>
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                       {readyGroups.map((group: any, groupIndex: number) => (
+                          <div key={`${group.providerName}-${groupIndex}`} className="space-y-1.5">
+                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] text-green-200 backdrop-blur">
+                              <span className="font-semibold truncate">Provedor: {group.providerName}</span>
+                              <span className="shrink-0 rounded bg-green-500/15 px-2 py-0.5 text-[10px] text-green-300">
+                                {group.games?.length || 0}
+                              </span>
+                            </div>
+                            {group.games?.map((game: any, i: number) => (
+                              <div key={`${game.displayName}-${i}`} className="py-1.5 px-2 rounded bg-green-500/10 border border-green-500/20 text-xs text-gray-300 font-sans truncate">
+                                {game.displayName}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {gameListData.readyGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pronto!</p>}
+                     </div>
+                   </div>
                   <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col min-h-0">
                     <h4 className="font-bold mb-3 flex items-center gap-2 text-orange-400 shrink-0">
                       <Clock className="w-4 h-4" />
                       Faltando ({gameListData.remainingGames?.length || 0})
                     </h4>
                     <p className="text-xs text-gray-500 mb-2 italic shrink-0">Jogos na lista que não foram encontrados nas miniaturas prontas.</p>
-                    <div className="flex-1 overflow-y-auto space-y-1 pr-2 custom-scrollbar">
-                       {gameListData.remainingGames?.map((game: any, i: number) => (
-                         <div key={i} className="py-1.5 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate">
-                           {game.displayName}
-                         </div>
-                       ))}
-                       {gameListData.remainingGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pendente!</p>}
-                    </div>
-                  </div>
+                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                       {remainingGroups.map((group: any, groupIndex: number) => (
+                          <div key={`${group.providerName}-${groupIndex}`} className="space-y-1.5">
+                            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] text-orange-200 backdrop-blur">
+                              <span className="font-semibold truncate">Provedor: {group.providerName}</span>
+                              <span className="shrink-0 rounded bg-orange-500/15 px-2 py-0.5 text-[10px] text-orange-300">
+                                {group.games?.length || 0}
+                              </span>
+                            </div>
+                            {group.games?.map((game: any, i: number) => (
+                              <div key={`${game.displayName}-${i}`} className="py-1.5 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate">
+                                {game.displayName}
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {gameListData.remainingGames?.length === 0 && <p className="text-center py-20 text-gray-600 text-xs italic">Nenhum pendente!</p>}
+                     </div>
+                   </div>
                 </div>
               </div>
             )}

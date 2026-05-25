@@ -3,7 +3,60 @@ import { RefreshCw, FileCheck, AlertCircle, Clock, Package, CheckCircle } from "
 import { motion } from "motion/react";
 import { Fragment } from "react";
 
-export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRefresh: () => void }) {
+function getProviderGroups(gameListData: any, groupedKey: string, flatKey: string) {
+  const groups = gameListData?.[groupedKey];
+  if (groups?.length) return groups;
+
+  const games = gameListData?.[flatKey];
+  return games?.length ? [{ providerName: "Sem provedor", games }] : [];
+}
+
+function CompactProviderList({ title, count, groups, tone, icon: Icon }: { title: string, count: number, groups: any[], tone: "green" | "orange", icon: any }) {
+  const toneClasses = tone === "green"
+    ? {
+        title: "text-green-400",
+        header: "text-green-200",
+        badge: "bg-green-500/15 text-green-300",
+        item: "bg-green-500/10 border-green-500/20",
+      }
+    : {
+        title: "text-orange-400",
+        header: "text-orange-200",
+        badge: "bg-orange-500/15 text-orange-300",
+        item: "bg-orange-500/10 border-orange-500/20",
+      };
+
+  return (
+    <div className="min-h-0 flex flex-col rounded-xl bg-white/[0.02] border border-white/5 p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h4 className={`font-bold flex items-center gap-2 ${toneClasses.title}`}>
+          <Icon className="w-4 h-4" />
+          {title} ({count})
+        </h4>
+      </div>
+      <div className="max-h-[280px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+        {groups.map((group: any, groupIndex: number) => (
+          <div key={`${title}-${group.providerName}-${groupIndex}`} className="space-y-1.5">
+            <div className={`sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] ${toneClasses.header} backdrop-blur`}>
+              <span className="font-semibold truncate">Provedor: {group.providerName}</span>
+              <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] ${toneClasses.badge}`}>
+                {group.games?.length || 0}
+              </span>
+            </div>
+            {group.games?.map((game: any, i: number) => (
+              <div key={`${title}-${group.providerName}-${game.displayName}-${i}`} className={`py-1.5 px-2 rounded border text-xs text-gray-300 font-sans truncate ${toneClasses.item}`}>
+                {game.displayName}
+              </div>
+            ))}
+          </div>
+        ))}
+        {count === 0 && <p className="text-center py-12 text-gray-600 text-xs italic">Nenhum item.</p>}
+      </div>
+    </div>
+  );
+}
+
+export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData: any, onRefresh: () => void, isLoading: boolean }) {
   if (!analysisData) return <div className="p-10 text-center opacity-50">Carregando dados...</div>;
 
   const stats = [
@@ -12,6 +65,8 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
     { label: "Jogos Feitos", value: analysisData.gameListData?.completedGames || 0, icon: FileCheck, color: "text-green-400", glow: "bg-green-500/20" },
     { label: "Lista Total", value: analysisData.gameListData?.totalListedGames || 0, icon: Clock, color: "text-purple-400", glow: "bg-purple-500/20" },
   ];
+  const readyGroups = getProviderGroups(analysisData.gameListData, "readyGamesByProvider", "readyGames");
+  const remainingGroups = getProviderGroups(analysisData.gameListData, "remainingGamesByProvider", "remainingGames");
 
   return (
     <div className="space-y-10 relative">
@@ -22,9 +77,10 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
         </div>
         <button 
           onClick={onRefresh}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full acrylic hover:bg-white/10 transition-all text-sm font-semibold active:scale-95"
+          disabled={isLoading}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full acrylic hover:bg-white/10 transition-all text-sm font-semibold active:scale-95 disabled:opacity-70 disabled:cursor-wait"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           Sincronizar
         </button>
       </div>
@@ -146,6 +202,34 @@ export function Dashboard({ analysisData, onRefresh }: { analysisData: any, onRe
           </div>
         </GlassCard>
       </div>
+
+      <GlassCard className="!p-6">
+        <div className="flex items-center justify-between gap-4 mb-5">
+          <h3 className="text-xl font-bold flex items-center gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-fluent-accent" />
+            Gestão da Lista
+          </h3>
+          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+            {analysisData.gameListData?.totalListedGames || 0} jogos
+          </span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <CompactProviderList
+            title="Feitos"
+            count={analysisData.gameListData?.completedGames || 0}
+            groups={readyGroups}
+            tone="green"
+            icon={CheckCircle}
+          />
+          <CompactProviderList
+            title="Faltando"
+            count={analysisData.gameListData?.remainingGames?.length || 0}
+            groups={remainingGroups}
+            tone="orange"
+            icon={Clock}
+          />
+        </div>
+      </GlassCard>
     </div>
   );
 }

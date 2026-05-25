@@ -23,6 +23,7 @@ const PENDING_LIST_EXPORT_FILE = 'lista-de-pendentes.txt';
 const DEFAULT_BATCH_SIZE = 17;
 const MAX_BATCH_SIZE = 17;
 const FILE_TIME_TOLERANCE_MS = 1000;
+type CopyOrder = 'newest' | 'oldest';
 
 // --- TIME LOGIC CONSTANTS ---
 const MIN_INTERVAL_MINUTES = 5;
@@ -174,7 +175,7 @@ function analyzeFileSyncStatus(sourcePath: string, destPath: string) {
 }
 
 function normalizeGameName(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.webp$/i, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.webp$/i, '').replace(/:/g, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 function cleanGameListLine(line: string) {
@@ -182,7 +183,134 @@ function cleanGameListLine(line: string) {
 }
 
 function isProviderListLine(line: string) {
-  return /^provedor\s*:\s*\S/i.test(line);
+  return /^provedor\s*:/i.test(line);
+}
+
+function getProviderListName(line: string) {
+  const match = line.match(/^provedor\s*:\s*(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+function normalizeProviderName(providerName: string) {
+  return providerName.replace(/\s+/g, ' ').trim() || 'Sem provedor';
+}
+
+function getProviderNameFromRelativePath(relativePath: string) {
+  const segments = relativePath.split(/[\\/]/).filter(Boolean);
+  return segments.length > 1 ? normalizeProviderName(segments[0]) : 'Sem provedor';
+}
+
+function getFileNameFromRelativePath(relativePath: string) {
+  return relativePath.split(/[\\/]/).pop() || relativePath;
+}
+
+function createProviderGameKey(providerName: string, normalizedGameName: string) {
+  return `${normalizeGameName(providerName)}::${normalizedGameName}`;
+}
+
+function createProviderGameKeyFromRelativePath(relativePath: string) {
+  const normalizedGameName = normalizeGameName(getFileNameFromRelativePath(relativePath));
+  if (!normalizedGameName) return null;
+  return createProviderGameKey(getProviderNameFromRelativePath(relativePath), normalizedGameName);
+}
+
+function groupGamesByProvider(games: any[]) {
+  const groups: any[] = [];
+  const groupsByProvider = new Map<string, any>();
+
+  games.forEach((game) => {
+    const providerName = normalizeProviderName(game.providerName || 'Sem provedor');
+    const providerKey = normalizeGameName(providerName);
+    let group = groupsByProvider.get(providerKey);
+
+    if (!group) {
+      group = { providerName, games: [] };
+      groupsByProvider.set(providerKey, group);
+      groups.push(group);
+    }
+
+    group.games.push(game);
+  });
+
+  return groups;
+}
+
+function getDisplayNameFromFileName(fileName: string) {
+  const parsedName = path.parse(fileName).name;
+  return parsedName.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim() || parsedName;
+}
+
+function collectDestinationRecords(destDir: string) {
+  if (!fs.existsSync(destDir)) {
+    return { status: 'missing', totalGames: 0, providers: [] };
+  }
+
+  const groupsByProvider = new Map<string, any>();
+  let totalGames = 0;
+
+  collectWebpFiles(destDir).forEach((filePath) => {
+    const stats = getFileStats(filePath);
+    if (!stats) return;
+
+    const relativePath = path.relative(destDir, filePath);
+    const fileName = getFileNameFromRelativePath(relativePath);
+    const providerName = getProviderNameFromRelativePath(relativePath);
+    const providerKey = normalizeGameName(providerName);
+    const modifiedAtMs = stats.mtimeMs;
+    const createdAtMs = stats.birthtimeMs;
+    const sizeBytes = stats.size;
+    const extension = path.extname(fileName).replace('.', '').toLowerCase() || 'webp';
+
+    let group = groupsByProvider.get(providerKey);
+    if (!group) {
+      group = {
+        providerName,
+        providerKey,
+        gameCount: 0,
+        totalSizeBytes: 0,
+        coverPath: filePath,
+        latestModifiedAtMs: modifiedAtMs,
+        oldestModifiedAtMs: modifiedAtMs,
+        games: [],
+      };
+      groupsByProvider.set(providerKey, group);
+    }
+
+    const gameRecord = {
+      providerName,
+      providerKey,
+      displayName: getDisplayNameFromFileName(fileName),
+      fileName,
+      relativePath,
+      destPath: filePath,
+      modifiedAtMs,
+      createdAtMs,
+      sizeBytes,
+      extension,
+    };
+
+    group.games.push(gameRecord);
+    group.gameCount += 1;
+    group.totalSizeBytes += sizeBytes;
+    totalGames += 1;
+
+    if (modifiedAtMs > group.latestModifiedAtMs) {
+      group.latestModifiedAtMs = modifiedAtMs;
+      group.coverPath = filePath;
+    }
+    if (modifiedAtMs < group.oldestModifiedAtMs) {
+      group.oldestModifiedAtMs = modifiedAtMs;
+    }
+  });
+
+  const providers = Array.from(groupsByProvider.values())
+    .map((group) => ({
+      ...group,
+      games: [...group.games].sort((a, b) => b.modifiedAtMs - a.modifiedAtMs),
+    }))
+    .sort((a, b) => a.providerName.localeCompare(b.providerName, 'pt-BR', { sensitivity: 'base' }));
+
+  return { status: 'ok', totalGames, providers };
 }
 
 function collectComparisonData(sourceDir: string, destDir: string) {
@@ -198,9 +326,25 @@ function collectComparisonData(sourceDir: string, destDir: string) {
   return { comparedFiles, totalSourceFiles: sourceFiles.length, pendingFiles };
 }
 
+function getCopyOrder(settings: any = {}): CopyOrder {
+  return settings.copyOrder === 'oldest' ? 'oldest' : 'newest';
+}
+
+function getFileModifiedAtMs(file: any) {
+  return Number(file?.modifiedAtMs ?? file?.syncStatus?.sourceModifiedAtMs ?? 0) || 0;
+}
+
+function sortPendingFilesByOrder(files: any[] = [], settings: any = {}) {
+  const copyOrder = getCopyOrder(settings);
+  return [...files].sort((a, b) => {
+    const diff = getFileModifiedAtMs(a) - getFileModifiedAtMs(b);
+    return copyOrder === 'newest' ? -diff : diff;
+  });
+}
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   app.use(express.json());
 
@@ -223,6 +367,7 @@ async function startServer() {
     const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
 
     const data = collectComparisonData(source, dest);
+    const recordsData = collectDestinationRecords(dest);
     
     // Game List Logic
     let gameListData: any = { status: 'missing' };
@@ -230,38 +375,72 @@ async function startServer() {
       try {
         const content = fs.readFileSync(listPath, 'utf8');
         const listedGames: any[] = [];
-        const createdGames = new Set(data.comparedFiles.map(f => normalizeGameName(path.basename(f.relativePath, '.webp'))));
+        const createdGameNames = new Set(data.comparedFiles.map(f => normalizeGameName(getFileNameFromRelativePath(f.relativePath))));
+        const createdProviderGameKeys = new Set(
+          data.comparedFiles
+            .map(f => createProviderGameKeyFromRelativePath(f.relativePath))
+            .filter(Boolean)
+        );
+        let currentProviderName = 'Sem provedor';
         
         // Add existing in dest
-        collectWebpFiles(dest).forEach(f => createdGames.add(normalizeGameName(path.basename(f, '.webp'))));
+        collectWebpFiles(dest).forEach(f => {
+          const relativePath = path.relative(dest, f);
+          const providerGameKey = createProviderGameKeyFromRelativePath(relativePath);
+          if (providerGameKey) createdProviderGameKeys.add(providerGameKey);
+          createdGameNames.add(normalizeGameName(getFileNameFromRelativePath(relativePath)));
+        });
 
         content.split(/\r?\n/).forEach(line => {
           const displayName = cleanGameListLine(line);
-          if (!displayName || displayName.startsWith('#') || displayName.includes('?') || isProviderListLine(displayName)) return;
+          if (!displayName || displayName.startsWith('#') || displayName.includes('?')) return;
+
+          const providerName = getProviderListName(displayName);
+          if (providerName) {
+            currentProviderName = normalizeProviderName(providerName);
+            return;
+          }
+
+          if (isProviderListLine(displayName)) return;
+
           const normalized = normalizeGameName(displayName);
           if (!normalized) return;
-          listedGames.push({ displayName, normalized });
+          listedGames.push({ displayName, normalized, providerName: currentProviderName });
         });
 
-        const remaining = listedGames.filter(g => !createdGames.has(g.normalized));
-        const readyGames = listedGames.filter(g => createdGames.has(g.normalized));
+        const isGameCreated = (game: any) => {
+          const providerKey = normalizeGameName(game.providerName || 'Sem provedor');
+          const gameKey = createProviderGameKey(game.providerName || 'Sem provedor', game.normalized);
+
+          if (providerKey === normalizeGameName('Sem provedor')) {
+            return createdProviderGameKeys.has(gameKey) || createdGameNames.has(game.normalized);
+          }
+
+          return createdProviderGameKeys.has(gameKey);
+        };
+
+        const remaining = listedGames.filter(g => !isGameCreated(g));
+        const readyGames = listedGames.filter(g => isGameCreated(g));
         gameListData = {
           status: 'ok',
           totalListedGames: listedGames.length,
           completedGames: readyGames.length,
           remainingGames: remaining,
-          readyGames: readyGames
+          remainingGamesByProvider: groupGamesByProvider(remaining),
+          readyGames: readyGames,
+          readyGamesByProvider: groupGamesByProvider(readyGames)
         };
       } catch (err) {
         gameListData = { status: 'error', message: (err as Error).message };
       }
     }
 
-    res.json({ ...data, gameListData });
+    res.json({ ...data, gameListData, recordsData });
   });
 
   app.post("/api/copy/start", (req, res) => {
     const { files, settings } = req.body;
+    const queuedFiles = sortPendingFilesByOrder(Array.isArray(files) ? files : [], settings);
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -270,7 +449,7 @@ async function startServer() {
       mode: 'scheduled',
       status: 'running',
       progress: 0,
-      total: files.length,
+      total: queuedFiles.length,
       copied: 0,
       skipped: 0,
       failed: 0,
@@ -289,15 +468,15 @@ async function startServer() {
       const firstCopyDelayMs = Math.max(0, windowInfo.firstCopyReleaseAt.getTime() - windowInfo.now.getTime());
       
       console.log(`[Lote] Calculando schedule para ${availableWindowMs} ms disponíveis.`);
-      const delays = buildStretchDelaySchedule(files.length, firstCopyDelayMs, availableWindowMs);
+      const delays = buildStretchDelaySchedule(queuedFiles.length, firstCopyDelayMs, availableWindowMs);
       
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < queuedFiles.length; i++) {
         if (!currentCopyState || currentCopyState.status !== 'running') break;
         
         // Re-check window just in case (though it should be mostly inside if calculated right)
         if (!await waitForWindow(currentCopyState, settings)) return;
 
-        const file = files[i];
+        const file = queuedFiles[i];
         const delay = delays[i] || 0;
         
         currentCopyState.nextCopyAt = Date.now() + delay;
@@ -334,6 +513,7 @@ async function startServer() {
 
   app.post("/api/copy/sync-immediate", (req, res) => {
     const { files, settings } = req.body;
+    const queuedFiles = sortPendingFilesByOrder(Array.isArray(files) ? files : [], settings);
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -342,7 +522,7 @@ async function startServer() {
       mode: 'immediate',
       status: 'running',
       progress: 0,
-      total: files.length,
+      total: queuedFiles.length,
       copied: 0,
       skipped: 0,
       failed: 0,
@@ -353,13 +533,13 @@ async function startServer() {
     };
 
     (async () => {
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < queuedFiles.length; i++) {
         if (!currentCopyState || currentCopyState.status !== 'running') break;
 
         // Block if outside window! (The user wants this to be strictly respected too)
         if (!await waitForWindow(currentCopyState, settings)) return;
 
-        const file = files[i];
+        const file = queuedFiles[i];
         try {
           const destFolder = path.dirname(file.destPath);
           if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
@@ -425,7 +605,7 @@ async function startServer() {
         currentCopyState.waitingForWindow = false;
 
         const data = collectComparisonData(source, dest);
-        const { pendingFiles } = data;
+        const pendingFiles = sortPendingFilesByOrder(data.pendingFiles, settings);
         
         if (pendingFiles.length > 0) {
             for (const file of pendingFiles) {
