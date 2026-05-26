@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { Sidebar } from './components/Sidebar.tsx';
-import { Dashboard } from './views/Dashboard.tsx';
-import { Analyzer } from './views/Analyzer.tsx';
-import { ProgressView } from './views/ProgressView.tsx';
-import { ListView } from './views/ListView.tsx';
-import { RecordsView } from './views/RecordsView.tsx';
-import { SettingsView } from './views/SettingsView.tsx';
+import { useState, useEffect, useRef, useCallback } from 'react';
+// Importações sem a extensão .tsx para evitar avisos do compilador:
+import { Sidebar } from './components/Sidebar';
+import { Dashboard } from './views/Dashboard';
+import { Analyzer } from './views/Analyzer';
+import { ProgressView } from './views/ProgressView';
+import { ListView } from './views/ListView';
+import { RecordsView } from './views/RecordsView';
+import { SettingsView } from './views/SettingsView';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -15,7 +16,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const isAnalyzingRef = useRef(false);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       const res = await fetch('/api/config');
       const data = await res.json();
@@ -23,9 +24,9 @@ export default function App() {
     } catch (e) {
       console.error(e);
     }
-  };
+  }, []);
 
-  const runAnalysis = async (silent = false) => {
+  const runAnalysis = useCallback(async (silent = false) => {
     if (isAnalyzingRef.current) return;
     isAnalyzingRef.current = true;
     if (!silent) setIsLoading(true);
@@ -39,12 +40,12 @@ export default function App() {
       isAnalyzingRef.current = false;
       if (!silent) setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchConfig();
     runAnalysis();
-  }, []);
+  }, [fetchConfig, runAnalysis]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -54,7 +55,7 @@ export default function App() {
     }, 5000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [runAnalysis]);
 
   const renderContent = () => {
     switch (activeTab) {

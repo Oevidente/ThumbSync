@@ -1,4 +1,4 @@
-import { GlassCard } from '../components/GlassCard.tsx';
+import { GlassCard } from '../components/GlassCard';
 import {
   RefreshCw,
   FileCheck,
@@ -183,14 +183,12 @@ function CompactProviderList({
               );
 
               // Lógica de match igual ao backend: Provedor::Nome OU apenas Nome se for Sem Provedor
-              let isSent = sentData?.keys.has(gameKey);
-              if (
-                !isSent &&
-                normalizeGameName(providerName) ===
-                  normalizeGameName('Sem provedor')
-              ) {
-                isSent = sentData?.names.has(normalizedName);
-              }
+              const isSent = !!(
+                sentData?.keys.has(gameKey) ||
+                (normalizeGameName(providerName) ===
+                  normalizeGameName('Sem provedor') &&
+                  sentData?.names.has(normalizedName))
+              );
 
               const itemClasses = isSent
                 ? 'bg-green-500/10 border-green-500/20'
@@ -424,7 +422,7 @@ export function Dashboard({
                             alt={f.relativePath.split('/').pop()}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src =
+                              (e.currentTarget as HTMLImageElement).src =
                                 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIwaHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZmlsbD0iIzY2NiI+V0VCUDwvdGV4dD48L3N2Zz4=';
                             }}
                           />

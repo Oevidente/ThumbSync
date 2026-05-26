@@ -1,4 +1,4 @@
-import { GlassCard } from '../components/GlassCard.tsx';
+import { GlassCard } from '../components/GlassCard';
 import {
   List,
   Download,
@@ -7,6 +7,7 @@ import {
   Edit2,
   Save,
   X,
+  Plus,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 
@@ -46,6 +47,12 @@ export function ListView({
   const [listContent, setListContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Custom states for adding games
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [providerInput, setProviderInput] = useState('');
+  const [gamesInput, setGamesInput] = useState('');
+  const [isSavingMulti, setIsSavingMulti] = useState(false);
+
   useEffect(() => {
     if (isEditing) {
       loadListContent();
@@ -84,6 +91,151 @@ export function ListView({
     }
   };
 
+  const handleAddGamesSubmit = async () => {
+    const provider = providerInput.trim();
+    const cleanGamesText = gamesInput.trim();
+    if (!cleanGamesText) return;
+
+    setIsSavingMulti(true);
+    try {
+      const res = await fetch('/api/list/content');
+      const data = await res.json();
+      const currentContent = data.content || '';
+
+      const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
+      const getProviderName = (line: string) => {
+        const match = line.match(/^provedor\s*:\s*(.+)$/i);
+        return match?.[1]?.trim() || null;
+      };
+
+      const newGamesLines = cleanGamesText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      if (newGamesLines.length === 0) {
+        setIsSavingMulti(false);
+        return;
+      }
+
+      let lines = currentContent.split(/\r?\n/);
+      const targetProvider = provider.toLowerCase();
+
+      const isSemProvedor = !provider || targetProvider === 'sem provedor';
+
+      if (isSemProvedor) {
+        let providerFoundIndex = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (isProviderLine(lines[i])) {
+            const name = getProviderName(lines[i]);
+            if (name && name.toLowerCase() === 'sem provedor') {
+              providerFoundIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (providerFoundIndex !== -1) {
+          let nextProviderIndex = lines.length;
+          for (let i = providerFoundIndex + 1; i < lines.length; i++) {
+            if (isProviderLine(lines[i])) {
+              nextProviderIndex = i;
+              break;
+            }
+          }
+
+          let insertIndex = nextProviderIndex;
+          for (let i = nextProviderIndex - 1; i > providerFoundIndex; i--) {
+            if (lines[i].trim() !== '') {
+              insertIndex = i + 1;
+              break;
+            }
+          }
+          lines.splice(insertIndex, 0, ...newGamesLines);
+        } else {
+          let firstProviderIndex = -1;
+          for (let i = 0; i < lines.length; i++) {
+            if (isProviderLine(lines[i])) {
+              firstProviderIndex = i;
+              break;
+            }
+          }
+
+          let insertIndex = firstProviderIndex === -1 ? lines.length : firstProviderIndex;
+          for (let i = (firstProviderIndex === -1 ? lines.length : firstProviderIndex) - 1; i >= 0; i--) {
+            if (lines[i].trim() !== '') {
+              insertIndex = i + 1;
+              break;
+            }
+          }
+
+          lines.splice(insertIndex, 0, ...newGamesLines);
+        }
+      } else {
+        let providerFoundIndex = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (isProviderLine(lines[i])) {
+            const name = getProviderName(lines[i]);
+            if (name && name.toLowerCase() === targetProvider) {
+              providerFoundIndex = i;
+              break;
+            }
+          }
+        }
+
+        if (providerFoundIndex !== -1) {
+          let nextProviderIndex = lines.length;
+          for (let i = providerFoundIndex + 1; i < lines.length; i++) {
+            if (isProviderLine(lines[i])) {
+              nextProviderIndex = i;
+              break;
+            }
+          }
+
+          let insertIndex = nextProviderIndex;
+          for (let i = nextProviderIndex - 1; i > providerFoundIndex; i--) {
+            if (lines[i].trim() !== '') {
+              insertIndex = i + 1;
+              break;
+            }
+          }
+
+          lines.splice(insertIndex, 0, ...newGamesLines);
+        } else {
+          while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+            lines.pop();
+          }
+
+          if (lines.length > 0) {
+            lines.push('');
+          }
+
+          lines.push(`Provedor: ${provider}`);
+          lines.push(...newGamesLines);
+        }
+      }
+
+      const finalContent = lines.join('\n');
+
+      await fetch('/api/list/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: finalContent }),
+      });
+
+      setProviderInput('');
+      setGamesInput('');
+      setIsAddModalOpen(false);
+      onRefresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingMulti(false);
+    }
+  };
+
   if (!gameListData) return null;
 
   const remainingGroups =
@@ -92,7 +244,7 @@ export function ListView({
       ? [{ providerName: 'Sem provedor', games: gameListData.remainingGames }]
       : []);
   const readyGroups =
-    gameListData.readyGamesByProvider ??
+    gameListData.readyGamesByProvider ?? // Corrigido de readyGroupsByProvider para readyGamesByProvider
     (gameListData.readyGames?.length
       ? [{ providerName: 'Sem provedor', games: gameListData.readyGames }]
       : []);
@@ -156,13 +308,22 @@ export function ListView({
               Conteúdo Bruto (lista.txt)
             </h3>
             {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-sm transition-colors border border-white/5 hover:border-white/20 active:scale-95 text-white"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                Editar Arquivo
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-sm font-semibold transition-colors active:scale-95 shadow-[0_4px_12px_rgba(0,120,212,0.25)]"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Adicionar Jogos
+                </button>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-sm transition-colors border border-white/5 hover:border-white/20 active:scale-95 text-white"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Editar Arquivo
+                </button>
+              </div>
             ) : (
               <div className="flex gap-2">
                 <button
@@ -303,6 +464,83 @@ export function ListView({
           </div>
         </GlassCard>
       </div>
+
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg acrylic border border-white/10 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center pb-2 border-b border-white/5">
+              <h3 className="font-bold text-lg flex items-center gap-2 text-white font-sans">
+                <Plus className="w-5 h-5 text-fluent-accent" />
+                Adicionar Jogos por Provedor
+              </h3>
+              <button
+                onClick={() => {
+                  setProviderInput('');
+                  setGamesInput('');
+                  setIsAddModalOpen(false);
+                }}
+                className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-gray-300 block font-sans">
+                  Nome do Provedor
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Pragmatic Play ou Sem provedor"
+                  value={providerInput}
+                  onChange={(e) => setProviderInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-fluent-accent/50 focus:border-transparent transition-all font-sans"
+                />
+                <p className="text-[11px] text-gray-400 font-sans leading-relaxed">
+                  Se deixado em branco ou preenchido com &quot;Sem provedor&quot;, os jogos serão adicionados na seção geral de jogos sem provedor (normalmente no início da lista.txt).
+                </p>
+              </div>
+
+              <div className="space-y-1.5 flex-1 flex flex-col">
+                <label className="text-xs font-semibold text-gray-300 block font-sans">
+                  Jogos (um por linha)
+                </label>
+                <textarea
+                  rows={8}
+                  placeholder={`Digite um jogo por linha, exemplo:
+Sweet Bonanza
+Gates of Olympus
+Sugar Rush`}
+                  value={gamesInput}
+                  onChange={(e) => setGamesInput(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg bg-[#141414] border border-white/10 text-white placeholder-gray-500 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-fluent-accent/50 focus:border-transparent transition-all resize-y custom-scrollbar"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-white/5">
+              <button
+                onClick={() => {
+                  setProviderInput('');
+                  setGamesInput('');
+                  setIsAddModalOpen(false);
+                }}
+                className="px-4 py-2 rounded-lg border border-white/15 text-white hover:bg-white/5 text-sm transition-colors cursor-pointer active:scale-95 font-sans"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddGamesSubmit}
+                disabled={isSavingMulti || !gamesInput.trim()}
+                className="px-4 py-2 rounded-lg bg-fluent-accent hover:bg-fluent-accent-hover text-white text-sm font-semibold transition-colors cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,120,212,0.3)] font-sans"
+              >
+                {isSavingMulti ? 'Salvando...' : 'Adicionar e Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
