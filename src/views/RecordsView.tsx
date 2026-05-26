@@ -713,6 +713,17 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
     fetchCustomLogos();
   }, []);
 
+  useEffect(() => {
+    if (isEditModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isEditModalOpen]);
+
   const openEditModal = (provider: any) => {
     setEditingProviderKey(provider.providerKey);
     setEditingProviderName(provider.providerName);
@@ -1214,8 +1225,8 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
 
       {/* Visual Customization Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-3xl bg-zinc-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-3xl acrylic border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Header */}
             <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
