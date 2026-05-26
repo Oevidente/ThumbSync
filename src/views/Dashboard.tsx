@@ -335,7 +335,7 @@ export function Dashboard({
             Centro de Controle
           </h1>
           <p className="text-gray-400 font-medium">
-            Lógica preservada • Design ultra-vidro
+            ThumbSync • Sincronização & Gestão de Thumbs
           </p>
         </div>
         <button
