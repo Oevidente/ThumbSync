@@ -342,6 +342,74 @@ function sortPendingFilesByOrder(files: any[] = [], settings: any = {}) {
   });
 }
 
+function normalizeCopyPathKey(filePath: string) {
+  const resolvedPath = path.resolve(filePath);
+  return process.platform === 'win32' ? resolvedPath.toLowerCase() : resolvedPath;
+}
+
+function getCopyQueueKey(file: any) {
+  return normalizeCopyPathKey(file?.destPath || file?.relativePath || file?.sourcePath || '');
+}
+
+function dedupePendingFilesByDestination(files: any[] = []) {
+  const seen = new Set<string>();
+  const uniqueFiles: any[] = [];
+
+  for (const file of files) {
+    const key = getCopyQueueKey(file);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    uniqueFiles.push(file);
+  }
+
+  return uniqueFiles;
+}
+
+function buildCopyQueue(files: any[] = [], settings: any = {}) {
+  return sortPendingFilesByOrder(dedupePendingFilesByDestination(files), settings);
+}
+
+function getBatchLimit(settings: any = {}) {
+  const configuredLimit = Number(settings.sendLimit);
+  const limit = Number.isFinite(configuredLimit) && configuredLimit > 0
+    ? Math.floor(configuredLimit)
+    : DEFAULT_BATCH_SIZE;
+
+  return Math.min(limit, MAX_BATCH_SIZE);
+}
+
+function copyPendingFile(file: any) {
+  const destFolder = path.dirname(file.destPath);
+  if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+
+  fs.copyFileSync(file.sourcePath, file.destPath);
+
+  const sourceStats = getFileStats(file.sourcePath);
+  if (!sourceStats) return;
+
+  try {
+    fs.utimesSync(file.destPath, sourceStats.atime, sourceStats.mtime);
+  } catch (err) {
+    console.warn(`Copied ${file.destPath}, but could not preserve timestamps:`, err);
+  }
+}
+
+function getCopiedDisplayName(file: any) {
+  const filePath = file?.relativePath || file?.destPath || file?.sourcePath || '';
+  return path.basename(filePath, '.webp');
+}
+
+function recordCopiedFile(state: any, file: any, copiedAt = new Date()) {
+  const name = getCopiedDisplayName(file);
+  state.copiedNames.push(name);
+  state.copiedLog.push({
+    name,
+    relativePath: file?.relativePath || '',
+    copiedAt: copiedAt.toISOString(),
+    copiedAtMs: copiedAt.getTime(),
+  });
+}
+
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
@@ -440,7 +508,7 @@ async function startServer() {
 
   app.post("/api/copy/start", (req, res) => {
     const { files, settings } = req.body;
-    const queuedFiles = sortPendingFilesByOrder(Array.isArray(files) ? files : [], settings);
+    const queuedFiles = buildCopyQueue(Array.isArray(files) ? files : [], settings).slice(0, getBatchLimit(settings));
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -454,6 +522,7 @@ async function startServer() {
       skipped: 0,
       failed: 0,
       copiedNames: [],
+      copiedLog: [],
       startTime: new Date(),
       nextCopyAt: 0,
       currentFileWaiting: null
@@ -491,11 +560,9 @@ async function startServer() {
         }
 
         try {
-          const destFolder = path.dirname(file.destPath);
-          if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
-          fs.copyFileSync(file.sourcePath, file.destPath);
+          copyPendingFile(file);
           currentCopyState.copied++;
-          currentCopyState.copiedNames.push(path.basename(file.relativePath, '.webp'));
+          recordCopiedFile(currentCopyState, file);
         } catch (err) {
           currentCopyState.failed++;
         }
@@ -513,7 +580,7 @@ async function startServer() {
 
   app.post("/api/copy/sync-immediate", (req, res) => {
     const { files, settings } = req.body;
-    const queuedFiles = sortPendingFilesByOrder(Array.isArray(files) ? files : [], settings);
+    const queuedFiles = buildCopyQueue(Array.isArray(files) ? files : [], settings);
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -527,6 +594,7 @@ async function startServer() {
       skipped: 0,
       failed: 0,
       copiedNames: [],
+      copiedLog: [],
       startTime: new Date(),
       nextCopyAt: 0,
       currentFileWaiting: null
@@ -541,11 +609,9 @@ async function startServer() {
 
         const file = queuedFiles[i];
         try {
-          const destFolder = path.dirname(file.destPath);
-          if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
-          fs.copyFileSync(file.sourcePath, file.destPath);
+          copyPendingFile(file);
           currentCopyState.copied++;
-          currentCopyState.copiedNames.push(path.basename(file.relativePath, '.webp'));
+          recordCopiedFile(currentCopyState, file);
         } catch (err) {
           currentCopyState.failed++;
         }
@@ -579,10 +645,13 @@ async function startServer() {
       skipped: 0,
       failed: 0,
       copiedNames: [],
+      copiedLog: [],
       startTime: new Date(),
       nextCopyAt: 0,
       currentFileWaiting: null
     };
+
+    const copiedSourceVersions = new Map<string, number>();
 
     // Use interval but skip logic if outside time window
     watchInterval = setInterval(() => {
@@ -605,16 +674,19 @@ async function startServer() {
         currentCopyState.waitingForWindow = false;
 
         const data = collectComparisonData(source, dest);
-        const pendingFiles = sortPendingFilesByOrder(data.pendingFiles, settings);
+        const pendingFiles = buildCopyQueue(data.pendingFiles, settings);
         
         if (pendingFiles.length > 0) {
             for (const file of pendingFiles) {
+                const copyKey = getCopyQueueKey(file);
+                const sourceVersion = getFileModifiedAtMs(file);
+                if (copiedSourceVersions.get(copyKey) === sourceVersion) continue;
+
                 try {
-                    const destFolder = path.dirname(file.destPath);
-                    if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
-                    fs.copyFileSync(file.sourcePath, file.destPath);
+                    copyPendingFile(file);
+                    copiedSourceVersions.set(copyKey, sourceVersion);
                     currentCopyState.copied++;
-                    currentCopyState.copiedNames.push(path.basename(file.relativePath, '.webp'));
+                    recordCopiedFile(currentCopyState, file);
                 } catch (err) {
                     currentCopyState.failed++;
                 }

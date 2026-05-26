@@ -80,7 +80,13 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
           disabled={isLoading}
           className="flex items-center gap-2 px-5 py-2.5 rounded-full acrylic hover:bg-white/10 transition-all text-sm font-semibold active:scale-95 disabled:opacity-70 disabled:cursor-wait"
         >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          <motion.span
+            className="inline-flex"
+            animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
+            transition={{ duration: isLoading ? 0.8 : 0.2, ease: "linear", repeat: isLoading ? Infinity : 0 }}
+          >
+            <RefreshCw className="w-4 h-4" />
+          </motion.span>
           Sincronizar
         </button>
       </div>
@@ -207,7 +213,7 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
         <div className="flex items-center justify-between gap-4 mb-5">
           <h3 className="text-xl font-bold flex items-center gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-fluent-accent" />
-            Gestão da Lista
+            Preview da lista
           </h3>
           <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
             {analysisData.gameListData?.totalListedGames || 0} jogos

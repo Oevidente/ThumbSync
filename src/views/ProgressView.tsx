@@ -9,6 +9,13 @@ function getFileModifiedAt(file: any) {
   return Number(file?.modifiedAtMs ?? file?.syncStatus?.sourceModifiedAtMs ?? 0) || 0;
 }
 
+function formatLogTime(value: any) {
+  if (!value) return '--:--:--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--:--:--';
+  return date.toLocaleTimeString();
+}
+
 export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [status, setStatus] = useState<any>({ status: 'idle' });
   const [sendLimit, setSendLimit] = useState(16);
@@ -143,6 +150,10 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const isRunning = status.status === 'running';
   const isFinished = status.status === 'finished';
   const currentMode = status.mode || selectedMode;
+  const copiedLog = status.copiedLog || status.copiedNames?.map((name: string) => ({
+    name,
+    copiedAt: status.startTime
+  })) || [];
 
   return (
     <div className="space-y-8">
@@ -408,15 +419,15 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                   <div className="space-y-2">
                     <h5 className="text-[10px] uppercase tracking-widest font-bold text-gray-500">Atividade em Tempo Real:</h5>
                     <div className="h-40 bg-black/30 rounded-lg border border-white/5 p-4 font-mono text-[11px] overflow-y-auto space-y-1 scrollbar-hide flex flex-col-reverse">
-                      {status.copiedNames && [...status.copiedNames].reverse().map((name: string, i: number) => (
-                        <div key={i} className="flex gap-2 text-green-500/80">
-                          <span className="opacity-40">[{new Date().toLocaleTimeString()}]</span>
+                      {[...copiedLog].reverse().map((entry: any, i: number) => (
+                        <div key={`${entry.name}-${entry.copiedAtMs || entry.copiedAt || i}`} className="flex gap-2 text-green-500/80">
+                          <span className="opacity-40">[{formatLogTime(entry.copiedAt || entry.copiedAtMs)}]</span>
                           <span className="font-semibold">OK:</span>
-                          <span>{name} sincronizado com sucesso.</span>
+                          <span>{entry.name} sincronizado com sucesso.</span>
                         </div>
                       ))}
                       <div className="text-blue-400 opacity-50 flex gap-2">
-                         <span>[{new Date(status.startTime || Date.now()).toLocaleTimeString()}]</span>
+                         <span>[{formatLogTime(status.startTime)}]</span>
                          <span>{currentMode === 'watch' ? 'Standby iniciado. Aguardando novos arquivos...' : 'Iniciando sincronização...'}</span>
                       </div>
                     </div>
