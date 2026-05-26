@@ -483,12 +483,58 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Bootstrap mock files so that the browser-based environment is robust
   ensureMockDirs();
 
+  const CUSTOM_LOGOS_FILE = path.join(process.cwd(), 'custom_logos.json');
+
+  function getCustomLogos() {
+    if (fs.existsSync(CUSTOM_LOGOS_FILE)) {
+      try {
+        return JSON.parse(fs.readFileSync(CUSTOM_LOGOS_FILE, 'utf8'));
+      } catch (e) {
+        console.error("Error reading custom_logos.json", e);
+      }
+    }
+    return {};
+  }
+
+  function saveCustomLogos(logos: any) {
+    try {
+      fs.writeFileSync(CUSTOM_LOGOS_FILE, JSON.stringify(logos, null, 2), 'utf8');
+    } catch (e) {
+      console.error("Error writing custom_logos.json", e);
+    }
+  }
+
   // --- API ROUTES ---
+
+  app.get("/api/custom-logos", (req, res) => {
+    res.json(getCustomLogos());
+  });
+
+  app.post("/api/custom-logos", (req, res) => {
+    const { providerKey, customCover, customBgGradient, customGlowColor, brandText, tagline } = req.body;
+    if (!providerKey) {
+      return res.status(400).json({ error: "providerKey is required" });
+    }
+    const logos = getCustomLogos();
+    if (customCover === null || customCover === "") {
+      delete logos[providerKey];
+    } else {
+      logos[providerKey] = {
+        customCover,
+        customBgGradient: customBgGradient || undefined,
+        customGlowColor: customGlowColor || undefined,
+        brandText: brandText || undefined,
+        tagline: tagline || undefined,
+      };
+    }
+    saveCustomLogos(logos);
+    res.json({ status: "success", logos });
+  });
 
   app.get("/api/config", (req, res) => {
     res.json({ source: appConfig.source, dest: appConfig.dest, list: appConfig.list });

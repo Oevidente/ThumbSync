@@ -6,11 +6,13 @@ import {
   Clock,
   Database,
   Download,
+  Edit2,
   FileText,
   Layers,
   List,
   Package,
   Search,
+  Upload,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -605,14 +607,46 @@ function getProviderBrand(providerName: string): ProviderBrand {
   }
 }
 
-function ProviderCoverImage({ providerName, coverPath }: { providerName: string; coverPath?: string }) {
+const COLOR_THEMES = [
+  { id: "default", name: "Original", previewBg: "bg-slate-800" },
+  { id: "red", name: "Vermelho", previewBg: "bg-red-650", bgGradient: "from-red-650 via-neutral-955 to-neutral-950", glowColor: "rgba(225,29,72,0.3)" },
+  { id: "orange", name: "Laranja", previewBg: "bg-orange-600", bgGradient: "from-orange-600 via-stone-900 to-amber-950", glowColor: "rgba(249,115,22,0.3)" },
+  { id: "amber", name: "Âmbar", previewBg: "bg-amber-600", bgGradient: "from-amber-600 via-stone-900 to-amber-950", glowColor: "rgba(245,158,11,0.3)" },
+  { id: "emerald", name: "Esmeralda", previewBg: "bg-emerald-600", bgGradient: "from-emerald-600 via-slate-950 to-teal-900", glowColor: "rgba(16,185,129,0.3)" },
+  { id: "teal", name: "Ciano Escuro", previewBg: "bg-teal-600", bgGradient: "from-teal-600 via-teal-950 to-neutral-950", glowColor: "rgba(13,148,136,0.3)" },
+  { id: "blue", name: "Azul", previewBg: "bg-blue-700", bgGradient: "from-blue-700 via-slate-900 to-blue-950", glowColor: "rgba(29,78,216,0.3)" },
+  { id: "purple", name: "Roxo", previewBg: "bg-purple-700", bgGradient: "from-purple-700 via-fuchsia-950 to-neutral-900", glowColor: "rgba(168,85,247,0.3)" },
+  { id: "fuchsia", name: "Fúcsia", previewBg: "bg-fuchsia-600", bgGradient: "from-fuchsia-600 via-purple-950 to-neutral-950", glowColor: "rgba(217,70,239,0.3)" },
+  { id: "gray", name: "Cinza", previewBg: "bg-slate-700", bgGradient: "from-slate-700 via-neutral-900 to-slate-950", glowColor: "rgba(100,116,139,0.15)" },
+];
+
+function ProviderCoverImage({ 
+  providerName, 
+  custom 
+}: { 
+  providerName: string; 
+  custom?: {
+    customCover: string;
+    customBgGradient?: string;
+    customGlowColor?: string;
+    brandText?: string;
+    tagline?: string;
+  };
+}) {
   const brand = getProviderBrand(providerName);
 
+  const bgGradient = custom?.customBgGradient || brand.bgGradient;
+  const glowColor = custom?.customGlowColor || brand.glowColor;
+  const brandText = custom?.brandText || brand.brandText;
+  const tagline = custom?.tagline || brand.tagline;
+
+  const hasCustomBg = !!custom?.customBgGradient;
+
   return (
-    <div className={`w-full h-full bg-gradient-to-br ${brand.bgGradient} flex flex-col items-center justify-center p-6 relative select-none overflow-hidden transition-all duration-550 group-hover:brightness-[1.15]`}>
+    <div className={`w-full h-full bg-gradient-to-br ${bgGradient} flex flex-col items-center justify-center p-6 relative select-none overflow-hidden transition-all duration-550 group-hover:brightness-[1.15]`}>
       <div 
         className="absolute w-44 h-44 rounded-full blur-[44px] opacity-40 pointer-events-none" 
-        style={{ backgroundColor: brand.glowColor, left: "calc(50% - 88px)", top: "calc(50% - 88px)" }}
+        style={{ backgroundColor: glowColor, left: "calc(50% - 88px)", top: "calc(50% - 88px)" }}
       />
       
       <div className="absolute top-4 left-6 w-1 h-1 bg-white/20 rounded-full" />
@@ -620,16 +654,20 @@ function ProviderCoverImage({ providerName, coverPath }: { providerName: string;
       <div className="absolute bottom-6 left-12 w-1.5 h-1.5 bg-white/15 rounded-full" />
       <div className="absolute bottom-10 right-8 w-1 h-1 bg-white/30 rounded-full" />
 
-      <div className={`p-4 rounded-2xl backdrop-blur-md shadow-lg flex items-center justify-center mb-3 border ${brand.badgeBg} transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
-        {brand.icon}
+      <div className={`w-20 h-20 rounded-2xl backdrop-blur-md shadow-lg flex items-center justify-center mb-3 border ${hasCustomBg ? "bg-white/10 border-white/20" : brand.badgeBg} transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3 overflow-hidden p-2`}>
+        {custom?.customCover ? (
+          <img src={custom.customCover} alt={providerName} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+        ) : (
+          brand.icon
+        )}
       </div>
 
-      <h3 className="text-xl font-black text-white tracking-widest text-center uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] font-sans">
-        {brand.brandText}
+      <h3 className="text-xl font-black text-white tracking-widest text-center uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] font-sans truncate max-w-full px-2">
+        {brandText}
       </h3>
 
-      <span className="text-[9px] font-bold text-gray-300 tracking-widest uppercase mt-1.5 text-center bg-black/40 px-2.5 py-0.5 rounded border border-white/5 opacity-85 backdrop-blur-sm">
-        {brand.tagline}
+      <span className="text-[9px] font-bold text-gray-300 tracking-widest uppercase mt-1.5 text-center bg-black/40 px-2.5 py-0.5 rounded border border-white/5 opacity-85 backdrop-blur-sm truncate max-w-full">
+        {tagline}
       </span>
       
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
@@ -644,6 +682,184 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
   const [gameFilter, setGameFilter] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("gallery");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+
+  // Custom Logos Client-Side persistence state
+  const [customLogos, setCustomLogos] = useState<Record<string, any>>({});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingProviderKey, setEditingProviderKey] = useState("");
+  const [editingProviderName, setEditingProviderName] = useState("");
+  const [inputType, setInputType] = useState<"url" | "file">("file");
+  const [customUrl, setCustomUrl] = useState("");
+  const [customFileBase64, setCustomFileBase64] = useState("");
+  const [selectedThemeId, setSelectedThemeId] = useState("default");
+  const [customBrandText, setCustomBrandText] = useState("");
+  const [customTagline, setCustomTagline] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+
+  const fetchCustomLogos = async () => {
+    try {
+      const res = await fetch("/api/custom-logos");
+      if (res.ok) {
+        const data = await res.json();
+        setCustomLogos(data);
+      }
+    } catch (err) {
+      console.error("Error loading custom logos", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomLogos();
+  }, []);
+
+  const openEditModal = (provider: any) => {
+    setEditingProviderKey(provider.providerKey);
+    setEditingProviderName(provider.providerName);
+    
+    const existing = customLogos[provider.providerKey];
+    if (existing) {
+      setCustomBrandText(existing.brandText || "");
+      setCustomTagline(existing.tagline || "");
+      
+      if (existing.customCover?.startsWith("data:")) {
+        setInputType("file");
+        setCustomFileBase64(existing.customCover);
+        setCustomUrl("");
+      } else {
+        setInputType("url");
+        setCustomUrl(existing.customCover || "");
+        setCustomFileBase64("");
+      }
+
+      const matchedTheme = COLOR_THEMES.find(
+        (t) => t.bgGradient === existing.customBgGradient && t.glowColor === existing.customGlowColor
+      );
+      setSelectedThemeId(matchedTheme ? matchedTheme.id : "default");
+    } else {
+      const defaultBrand = getProviderBrand(provider.providerName);
+      setCustomBrandText(defaultBrand.brandText || provider.providerName.toUpperCase());
+      setCustomTagline(defaultBrand.tagline || "CASINO PARTNER COVERS");
+      setInputType("file");
+      setCustomUrl("");
+      setCustomFileBase64("");
+      setSelectedThemeId("default");
+    }
+    
+    setIsEditModalOpen(true);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/png", "image/webp", "image/avif"];
+    if (!validTypes.includes(file.type) && !file.name.endsWith(".avif")) {
+      alert("Por favor, selecione uma imagem PNG, WebP ou AVIF.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCustomFileBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/png", "image/webp", "image/avif"];
+    if (!validTypes.includes(file.type) && !file.name.endsWith(".avif")) {
+      alert("Por favor, selecione uma imagem PNG, WebP ou AVIF.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCustomFileBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveCustomLogo = async () => {
+    setIsSaving(true);
+    try {
+      const coverValue = inputType === "url" ? customUrl : customFileBase64;
+      const theme = COLOR_THEMES.find((t) => t.id === selectedThemeId);
+      
+      const payload = {
+        providerKey: editingProviderKey,
+        customCover: coverValue || null,
+        customBgGradient: theme?.bgGradient || null,
+        customGlowColor: theme?.glowColor || null,
+        brandText: customBrandText || null,
+        tagline: customTagline || null,
+      };
+
+      const res = await fetch("/api/custom-logos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCustomLogos(data.logos);
+        setIsEditModalOpen(false);
+      } else {
+        alert("Erro ao salvar personalização.");
+      }
+    } catch (err) {
+      console.error("Error saving custom logo", err);
+      alert("Erro ao salvar personalização.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleResetCustomLogo = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/custom-logos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ providerKey: editingProviderKey, customCover: "" }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCustomLogos(data.logos);
+        setIsEditModalOpen(false);
+      } else {
+        alert("Erro ao resetar personalização.");
+      }
+    } catch (err) {
+      console.error("Error resetting custom logo", err);
+      alert("Erro ao resetar personalização.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const providers: ProviderRecord[] = recordsData?.providers || [];
   const totalGames = recordsData?.totalGames ?? providers.reduce((total, provider) => total + provider.gameCount, 0);
@@ -698,9 +914,18 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
               Provedores
             </button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
+              <h1 className="text-3xl font-bold tracking-tight mb-2 flex flex-wrap items-center gap-3">
                 <Database className="w-8 h-8 text-fluent-accent" />
-                {selectedProvider.providerName}
+                {customLogos[selectedProvider.providerKey]?.brandText || selectedProvider.providerName}
+                
+                <button
+                  onClick={() => openEditModal(selectedProvider)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 hover:border-fluent-accent text-xs font-semibold text-gray-300 hover:text-white transition-all active:scale-95"
+                  title="Editar capa deste provedor"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Editar Capa
+                </button>
               </h1>
               <p className="text-gray-400">Jogos encontrados no destino para este provedor.</p>
             </div>
@@ -861,15 +1086,29 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
           </h1>
           <p className="text-gray-400">Galeria dos provedores com jogos já presentes no destino.</p>
         </div>
-        <div className="relative w-full lg:w-[320px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Filtrar provedores..."
-            value={providerFilter}
-            onChange={(event) => setProviderFilter(event.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-fluent-accent transition-colors text-sm"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0">
+          <div className="relative w-full lg:w-[260px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Filtrar provedores..."
+              value={providerFilter}
+              onChange={(event) => setProviderFilter(event.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-fluent-accent transition-colors text-sm"
+            />
+          </div>
+          
+          <button
+            onClick={() => {
+              if (providers.length > 0) {
+                openEditModal(providers[0]);
+              }
+            }}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-fluent-accent hover:bg-fluent-accent/80 hover:shadow-[0_0_15px_rgba(0,120,212,0.4)] transition-all text-sm font-semibold text-white active:scale-95 shrink-0"
+          >
+            <Edit2 className="w-4 h-4" />
+            Editar Capas
+          </button>
         </div>
       </div>
 
@@ -919,28 +1158,307 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-          {filteredProviders.map((provider) => (
-            <button
-              key={provider.providerKey}
-              onClick={() => setSelectedProviderKey(provider.providerKey)}
-              className="group text-left rounded-xl overflow-hidden border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-fluent-accent/40 transition-all active:scale-[0.99]"
-            >
-              <div className="aspect-[16/9] bg-white/[0.03] overflow-hidden relative">
-                <ProviderCoverImage providerName={provider.providerName} coverPath={provider.coverPath} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
-                <div className="absolute left-4 right-4 bottom-4 flex items-end justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-white truncate">{provider.providerName}</h2>
-                    <p className="text-xs text-gray-300 mt-1 truncate">Atualizado em {formatDate(provider.latestModifiedAtMs)}</p>
+          {filteredProviders.map((provider) => {
+            const isCustomized = !!customLogos[provider.providerKey];
+            const customTitle = customLogos[provider.providerKey]?.brandText || provider.providerName;
+            return (
+              <div
+                key={provider.providerKey}
+                className="relative group rounded-xl overflow-hidden border border-white/10 bg-white/[0.03] hover:border-fluent-accent/40 transition-all self-stretch"
+              >
+                {/* Floating Edit Button */}
+                <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(provider);
+                    }}
+                    className={`p-1.5 rounded-lg border text-gray-300 hover:text-white transition-all backdrop-blur active:scale-95 flex items-center justify-center ${
+                      isCustomized
+                        ? "bg-fluent-accent/40 border-fluent-accent/50 hover:bg-fluent-accent/60"
+                        : "bg-black/60 border-white/10 hover:bg-black/85 hover:border-white/30"
+                    }`}
+                    title="Editar capa deste provedor"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setSelectedProviderKey(provider.providerKey)}
+                  className="w-full h-full text-left active:scale-[0.99] transition-transform duration-250"
+                >
+                  <div className="aspect-[16/9] bg-white/[0.03] overflow-hidden relative">
+                    <ProviderCoverImage 
+                      providerName={provider.providerName} 
+                      custom={customLogos[provider.providerKey]} 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent pointer-events-none" />
+                    <div className="absolute left-4 right-4 bottom-4 flex items-end justify-between gap-3 pointer-events-none">
+                      <div className="min-w-0">
+                        <h2 className="text-xl font-bold text-white truncate">{customTitle}</h2>
+                        <p className="text-xs text-gray-300 mt-1 truncate">Atualizado em {formatDate(provider.latestModifiedAtMs)}</p>
+                      </div>
+                      <div className="shrink-0 rounded-lg bg-black/45 border border-white/10 px-3 py-2 text-center backdrop-blur">
+                        <p className="text-lg font-black leading-none">{provider.gameCount}</p>
+                        <p className="text-[10px] text-gray-300 uppercase tracking-widest mt-1">jogos</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="shrink-0 rounded-lg bg-black/45 border border-white/10 px-3 py-2 text-center backdrop-blur">
-                    <p className="text-lg font-black leading-none">{provider.gameCount}</p>
-                    <p className="text-[10px] text-gray-300 uppercase tracking-widest mt-1">jogos</p>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Visual Customization Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-3xl bg-zinc-900/95 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Header */}
+            <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-fluent-accent" />
+                  Personalizar Capa do Provedor
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">Customize o visual da marca, logotipo, título e efeitos de cor.</p>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              
+              {/* Left Column: Form Controls */}
+              <div className="space-y-5">
+                
+                {/* Provider Selector dropdown */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-300">Escolha o Provedor</label>
+                  <select
+                    value={editingProviderKey}
+                    onChange={(e) => {
+                      const selected = providers.find(p => p.providerKey === e.target.value);
+                      if (selected) openEditModal(selected);
+                    }}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent transition-colors"
+                  >
+                    {providers.map(p => (
+                      <option key={p.providerKey} value={p.providerKey} className="bg-zinc-900 text-white">
+                        {p.providerName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Edit brandTitle & Tagline */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-300">Nome da Marca</label>
+                    <input
+                      type="text"
+                      value={customBrandText}
+                      onChange={(e) => setCustomBrandText(e.target.value)}
+                      placeholder="Ex: PRAGMATIC PLAY"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-300">Slogan / Tagline</label>
+                    <input
+                      type="text"
+                      value={customTagline}
+                      onChange={(e) => setCustomTagline(e.target.value)}
+                      placeholder="Ex: PREMIUM SPINS"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors"
+                    />
                   </div>
                 </div>
+
+                {/* Cover Resource Input Selector */}
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-gray-300 block">Origem do Logotipo</label>
+                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-white/[0.03] border border-white/5 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setInputType("file")}
+                      className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        inputType === "file" 
+                          ? "bg-fluent-accent text-white shadow-sm" 
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Carregar Arquivo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputType("url")}
+                      className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        inputType === "url" 
+                          ? "bg-fluent-accent text-white shadow-sm" 
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Link Web (URL)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Source rendering */}
+                {inputType === "url" ? (
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-400">URL da Imagem (.png, .webp, .avif)</label>
+                    <input
+                      type="url"
+                      value={customUrl}
+                      onChange={(e) => setCustomUrl(e.target.value)}
+                      placeholder="https://exemplo.com/imagem.png"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-300 block">Upload de Arquivo</label>
+                    
+                    {/* Drag and Drop Container */}
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragOver={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDrop={handleDrop}
+                      className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition-all ${
+                        dragActive 
+                          ? "border-fluent-accent bg-fluent-accent/5" 
+                          : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="logo-upload"
+                        accept="image/png, image/webp, image/avif"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-center w-full">
+                        <Upload className="w-6 h-6 text-gray-400 group-hover:text-white" />
+                        <span className="text-xs font-semibold text-gray-300">
+                          Clique para selecionar ou arraste o arquivo
+                        </span>
+                        <span className="text-[10px] text-gray-500">
+                          Formatos aceitos: PNG, WebP e AVIF
+                        </span>
+                      </label>
+                    </div>
+
+                    {customFileBase64 && (
+                      <div className="flex items-center gap-2 bg-white/5 border border-white/5 p-2 rounded-lg justify-between">
+                        <span className="text-xs text-green-400 flex items-center gap-1.5 truncate">
+                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+                          Imagem carregada com sucesso!
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setCustomFileBase64("")}
+                          className="text-xs text-rose-500 hover:text-rose-400 font-semibold px-2 py-1 hover:bg-white/5 rounded"
+                        >
+                          Remover
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Accent Color picker */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-semibold text-gray-300 block">Tema de Cor dos Efeitos</label>
+                  <p className="text-[10px] text-gray-500">Muda a cor do gradiente de fundo e do brilho neon.</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {COLOR_THEMES.map((theme) => (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => setSelectedThemeId(theme.id)}
+                        className={`flex flex-col items-center gap-1 p-1 py-1.5 rounded-lg border text-center transition-all active:scale-95 ${
+                          selectedThemeId === theme.id 
+                            ? "bg-white/10 border-fluent-accent text-white" 
+                            : "bg-white/[0.02] border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded-full border border-white/10 ${theme.previewBg}`} />
+                        <span className="text-[9px] truncate max-w-full font-medium">{theme.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
               </div>
-            </button>
-          ))}
+
+              {/* Right Column: Live Preview & Actions */}
+              <div className="space-y-4 flex flex-col items-center justify-center h-full border-l border-white/5 pl-6 md:mt-2">
+                <span className="text-xs font-semibold text-gray-400 text-center">Pré-visualização em Tempo Real</span>
+                
+                <div className="w-[305px] h-[172px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl relative bg-zinc-950/80 p-0">
+                  <ProviderCoverImage 
+                    providerName={editingProviderName}
+                    custom={{
+                      customCover: inputType === "url" ? customUrl : customFileBase64,
+                      customBgGradient: COLOR_THEMES.find(t => t.id === selectedThemeId)?.bgGradient,
+                      customGlowColor: COLOR_THEMES.find(t => t.id === selectedThemeId)?.glowColor,
+                      brandText: customBrandText,
+                      tagline: customTagline
+                    }}
+                  />
+                </div>
+                
+                <p className="text-[10px] text-gray-500 text-center max-w-[260px] leading-relaxed">
+                  Note como as cores do efeito e o logotipo serão integrados na galeria com o efeito glow.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Footer buttons */}
+            <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleResetCustomLogo}
+                disabled={isSaving}
+                className="px-4 py-2 text-xs font-semibold border border-rose-500/25 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 rounded-lg active:scale-95 transition-all disabled:opacity-50"
+              >
+                Restaurar Padrão
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isSaving}
+                  className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustomLogo}
+                  disabled={isSaving}
+                  className="px-5 py-2 text-xs font-bold bg-fluent-accent hover:bg-fluent-accent/80 text-white rounded-lg active:scale-95 hover:shadow-[0_0_12px_rgba(0,120,212,0.35)] transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {isSaving ? "Salvando..." : "Salvar Alterações"}
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
       )}
     </div>
