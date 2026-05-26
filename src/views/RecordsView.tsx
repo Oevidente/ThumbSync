@@ -684,7 +684,14 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
 
   // Custom Logos Client-Side persistence state
-  const [customLogos, setCustomLogos] = useState<Record<string, any>>({});
+  const [customLogos, setCustomLogos] = useState<Record<string, any>>(() => {
+    try {
+      const saved = localStorage.getItem("custom-logos");
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProviderKey, setEditingProviderKey] = useState("");
   const [editingProviderName, setEditingProviderName] = useState("");
@@ -703,9 +710,19 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
       if (res.ok) {
         const data = await res.json();
         setCustomLogos(data);
+        localStorage.setItem("custom-logos", JSON.stringify(data));
+      } else {
+        const saved = localStorage.getItem("custom-logos");
+        if (saved) {
+          setCustomLogos(JSON.parse(saved));
+        }
       }
     } catch (err) {
       console.error("Error loading custom logos", err);
+      const saved = localStorage.getItem("custom-logos");
+      if (saved) {
+        setCustomLogos(JSON.parse(saved));
+      }
     }
   };
 
@@ -807,19 +824,19 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
 
   const handleSaveCustomLogo = async () => {
     setIsSaving(true);
-    try {
-      const coverValue = inputType === "url" ? customUrl : customFileBase64;
-      const theme = COLOR_THEMES.find((t) => t.id === selectedThemeId);
-      
-      const payload = {
-        providerKey: editingProviderKey,
-        customCover: coverValue || null,
-        customBgGradient: theme?.bgGradient || null,
-        customGlowColor: theme?.glowColor || null,
-        brandText: customBrandText || null,
-        tagline: customTagline || null,
-      };
+    const coverValue = inputType === "url" ? customUrl : customFileBase64;
+    const theme = COLOR_THEMES.find((t) => t.id === selectedThemeId);
+    
+    const payload = {
+      providerKey: editingProviderKey,
+      customCover: coverValue || null,
+      customBgGradient: theme?.bgGradient || null,
+      customGlowColor: theme?.glowColor || null,
+      brandText: customBrandText || null,
+      tagline: customTagline || null,
+    };
 
+    try {
       const res = await fetch("/api/custom-logos", {
         method: "POST",
         headers: {
@@ -831,13 +848,44 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
       if (res.ok) {
         const data = await res.json();
         setCustomLogos(data.logos);
+        localStorage.setItem("custom-logos", JSON.stringify(data.logos));
         setIsEditModalOpen(false);
       } else {
-        alert("Erro ao salvar personalização.");
+        // Fallback to localStorage if the API 404s (e.g. static host/Vite mismatch)
+        console.warn("API error or 404, using localStorage fallback");
+        const logos = { ...customLogos };
+        if (coverValue === null || coverValue === "") {
+          delete logos[editingProviderKey];
+        } else {
+          logos[editingProviderKey] = {
+            customCover: coverValue,
+            customBgGradient: theme?.bgGradient || undefined,
+            customGlowColor: theme?.glowColor || undefined,
+            brandText: customBrandText || undefined,
+            tagline: customTagline || undefined,
+          };
+        }
+        setCustomLogos(logos);
+        localStorage.setItem("custom-logos", JSON.stringify(logos));
+        setIsEditModalOpen(false);
       }
     } catch (err) {
-      console.error("Error saving custom logo", err);
-      alert("Erro ao salvar personalização.");
+      console.error("Error saving custom logo, using localStorage fallback", err);
+      const logos = { ...customLogos };
+      if (coverValue === null || coverValue === "") {
+        delete logos[editingProviderKey];
+      } else {
+        logos[editingProviderKey] = {
+          customCover: coverValue,
+          customBgGradient: theme?.bgGradient || undefined,
+          customGlowColor: theme?.glowColor || undefined,
+          brandText: customBrandText || undefined,
+          tagline: customTagline || undefined,
+        };
+      }
+      setCustomLogos(logos);
+      localStorage.setItem("custom-logos", JSON.stringify(logos));
+      setIsEditModalOpen(false);
     } finally {
       setIsSaving(false);
     }
@@ -857,13 +905,24 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
       if (res.ok) {
         const data = await res.json();
         setCustomLogos(data.logos);
+        localStorage.setItem("custom-logos", JSON.stringify(data.logos));
         setIsEditModalOpen(false);
       } else {
-        alert("Erro ao resetar personalização.");
+        // Fallback to localStorage
+        console.warn("API error or 404 resetting, using localStorage fallback");
+        const logos = { ...customLogos };
+        delete logos[editingProviderKey];
+        setCustomLogos(logos);
+        localStorage.setItem("custom-logos", JSON.stringify(logos));
+        setIsEditModalOpen(false);
       }
     } catch (err) {
-      console.error("Error resetting custom logo", err);
-      alert("Erro ao resetar personalização.");
+      console.error("Error resetting custom logo, using localStorage fallback", err);
+      const logos = { ...customLogos };
+      delete logos[editingProviderKey];
+      setCustomLogos(logos);
+      localStorage.setItem("custom-logos", JSON.stringify(logos));
+      setIsEditModalOpen(false);
     } finally {
       setIsSaving(false);
     }
