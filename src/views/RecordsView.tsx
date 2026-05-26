@@ -1439,38 +1439,32 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <GlassCard className="!p-5">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-fluent-accent/10 text-fluent-accent">
-              <Database className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Provedores</p>
-              <p className="text-2xl font-bold">{providers.length}</p>
-            </div>
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
+        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
+          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-fluent-accent/10 text-fluent-accent shrink-0">
+            <Database className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+          </div>
+          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
+            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">Provedores</p>
+            <p className="text-xs sm:text-2xl font-bold truncate max-w-full">{providers.length}</p>
           </div>
         </GlassCard>
-        <GlassCard className="!p-5">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-green-500/10 text-green-400">
-              <Package className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Jogos no destino</p>
-              <p className="text-2xl font-bold">{totalGames}</p>
-            </div>
+        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
+          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-green-500/10 text-green-400 shrink-0">
+            <Package className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+          </div>
+          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
+            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full font-sans">Jogos no destino</p>
+            <p className="text-xs sm:text-2xl font-bold truncate max-w-full">{totalGames}</p>
           </div>
         </GlassCard>
-        <GlassCard className="!p-5">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-white/5 text-gray-300">
-              <Clock className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Última alteração</p>
-              <p className="text-base font-bold">{formatDate(latestUpdateMs)}</p>
-            </div>
+        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
+          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-white/5 text-gray-300 shrink-0">
+            <Clock className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+          </div>
+          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
+            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">Última alteração</p>
+            <p className="text-[8px] sm:text-base font-bold truncate max-w-full leading-normal">{formatDate(latestUpdateMs)}</p>
           </div>
         </GlassCard>
       </div>

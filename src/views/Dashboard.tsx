@@ -395,23 +395,23 @@ export function Dashboard({
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
+      <div className="grid grid-cols-5 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-4 md:gap-6">
         {stats.map((stat) => (
           <Fragment key={stat.label}>
-            <GlassCard hover className="flex items-center md:items-start gap-2.5 md:gap-5 !p-3 md:!p-5 relative min-w-0">
+            <GlassCard hover className="flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-start text-center sm:text-left gap-1 sm:gap-5 !p-1.5 sm:!p-5 relative min-w-0 aspect-square sm:aspect-auto">
               <div
                 className={`absolute -inset-1 ${stat.glow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`}
               />
               <div
-                className={`p-1.5 md:p-3 rounded-lg md:rounded-xl bg-white/5 ${stat.color} relative z-10 shrink-0`}
+                className={`p-1 sm:p-3 rounded sm:rounded-xl bg-white/5 ${stat.color} relative z-10 shrink-0`}
               >
-                <stat.icon className="w-4 h-4 md:w-6 md:h-6" />
+                <stat.icon className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
               </div>
-              <div className="relative z-10 min-w-0">
-                <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 md:mb-1 truncate">
+              <div className="relative z-10 min-w-0 flex flex-col items-center sm:items-start w-full">
+                <p className="text-[7px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">
                   {stat.label}
                 </p>
-                <p className="text-base md:text-2xl font-bold tracking-tight">
+                <p className="text-xs sm:text-2xl font-bold tracking-tight truncate max-w-full">
                   {stat.value}
                 </p>
               </div>
