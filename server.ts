@@ -19,6 +19,12 @@ const DEFAULT_GAME_LIST = process.platform === 'win32'
   ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt'
   : path.join(__dirname, 'mock_data', 'lista.txt');
 
+let appConfig = {
+  source: DEFAULT_SOURCE,
+  dest: DEFAULT_DEST,
+  list: DEFAULT_GAME_LIST
+};
+
 const PENDING_LIST_EXPORT_FILE = 'lista-de-pendentes.txt';
 const DEFAULT_BATCH_SIZE = 17;
 const MAX_BATCH_SIZE = 17;
@@ -159,6 +165,63 @@ function collectWebpFiles(rootDir: string) {
   return results;
 }
 
+// Ensure mock directories and static mockup lists exist for the browser preview
+function ensureMockDirs() {
+  const sourceDir = path.join(__dirname, 'mock_data', 'source');
+  const destDir = path.join(__dirname, 'mock_data', 'dest');
+  const listFile = path.join(__dirname, 'mock_data', 'lista.txt');
+
+  if (!fs.existsSync(sourceDir)) fs.mkdirSync(sourceDir, { recursive: true });
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+
+  if (!fs.existsSync(listFile)) {
+    const initialContent = `Provedor: Pragmatic Play
+Gates of Olympus
+Sweet Bonanza
+Sugar Rush
+Starlight Princess
+
+Provedor: PG Soft
+Fortune Tiger
+Fortune Ox
+Fortune Rabbit
+Dragon Hatch
+
+Provedor: Sem provedor
+Spaceman
+Aviator`;
+    fs.writeFileSync(listFile, initialContent, 'utf8');
+  }
+
+  // Generate some realistic mock images if directories are completely empty
+  const mockWebps = [
+    'Gates of Olympus.webp', 'Sweet Bonanza.webp', 'Sugar Rush.webp', 'Starlight Princess.webp',
+    'Fortune Tiger.webp', 'Fortune Ox.webp', 'Fortune Rabbit.webp', 'Dragon Hatch.webp',
+    'Spaceman.webp', 'Aviator.webp', 'Zeus vs Hades.webp', 'Midas Golden Touch.webp'
+  ];
+
+  const filesInSource = collectWebpFiles(sourceDir);
+  if (filesInSource.length === 0) {
+    // Write small blank wepb placeholders to source so there is always mock data during testing
+    const placeholderBuffer = Buffer.from('RIFF_webp_placeholder_data');
+    mockWebps.forEach((name, idx) => {
+      let subDir = sourceDir;
+      if (idx < 4) {
+        subDir = path.join(sourceDir, 'Pragmatic Play');
+      } else if (idx < 8) {
+        subDir = path.join(sourceDir, 'PG Soft');
+      }
+      if (!fs.existsSync(subDir)) fs.mkdirSync(subDir, { recursive: true });
+      fs.writeFileSync(path.join(subDir, name), placeholderBuffer);
+      
+      // Delay modified times so some look newer or missing
+      const pastDate = new Date();
+      pastDate.setMinutes(pastDate.getMinutes() - (idx * 15));
+      fs.utimesSync(path.join(subDir, name), pastDate, pastDate);
+    });
+  }
+}
+
 function getFileStats(filePath: string) {
   try { return fs.statSync(filePath); } catch (err) { return null; }
 }
@@ -180,6 +243,11 @@ function normalizeGameName(value: string) {
 
 function cleanGameListLine(line: string) {
   return line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
+}
+
+// Validates a line to check if it represents a provider section header
+function isProviderLine(line: string) {
+  return /^provedor\s*:/i.test(line);
 }
 
 function isProviderListLine(line: string) {
@@ -204,6 +272,7 @@ function getFileNameFromRelativePath(relativePath: string) {
   return relativePath.split(/[\\/]/).pop() || relativePath;
 }
 
+// Computes a structured string key pairing of provider + game name
 function createProviderGameKey(providerName: string, normalizedGameName: string) {
   return `${normalizeGameName(providerName)}::${normalizedGameName}`;
 }
@@ -416,23 +485,27 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Ensure mock data exists for preview purposes if paths don't exist
-  if (!fs.existsSync(DEFAULT_SOURCE)) {
-    fs.mkdirSync(path.join(__dirname, 'mock_data', 'source'), { recursive: true });
-    fs.mkdirSync(path.join(__dirname, 'mock_data', 'dest'), { recursive: true });
-    fs.writeFileSync(path.join(__dirname, 'mock_data', 'lista.txt'), "Game 1\nGame 2\nGame 3");
-  }
+  // Bootstrap mock files so that the browser-based environment is robust
+  ensureMockDirs();
 
   // --- API ROUTES ---
 
   app.get("/api/config", (req, res) => {
-    res.json({ source: DEFAULT_SOURCE, dest: DEFAULT_DEST, list: DEFAULT_GAME_LIST });
+    res.json({ source: appConfig.source, dest: appConfig.dest, list: appConfig.list });
+  });
+
+  app.post("/api/config", (req, res) => {
+    const { source, dest, list } = req.body;
+    if (source) appConfig.source = source;
+    if (dest) appConfig.dest = dest;
+    if (list) appConfig.list = list;
+    res.json({ source: appConfig.source, dest: appConfig.dest, list: appConfig.list });
   });
 
   app.get("/api/analyze", (req, res) => {
-    const source = (req.query.source as string) || DEFAULT_SOURCE;
-    const dest = (req.query.dest as string) || DEFAULT_DEST;
-    const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
+    const source = (req.query.source as string) || appConfig.source;
+    const dest = (req.query.dest as string) || appConfig.dest;
+    const listPath = (req.query.list as string) || appConfig.list;
 
     const data = collectComparisonData(source, dest);
     const recordsData = collectDestinationRecords(dest);
@@ -648,8 +721,8 @@ async function startServer() {
   });
 
   app.post("/api/copy/watch-start", (req, res) => {
-    const source = (req.body.source as string) || DEFAULT_SOURCE;
-    const dest = (req.body.dest as string) || DEFAULT_DEST;
+    const source = (req.body.source as string) || appConfig.source;
+    const dest = (req.body.dest as string) || appConfig.dest;
     const settings = req.body.settings || {};
     
     if (currentCopyState && currentCopyState.status === 'running') {
@@ -736,7 +809,7 @@ async function startServer() {
   });
 
   app.get("/api/list/content", (req, res) => {
-    const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
+    const listPath = (req.query.list as string) || appConfig.list;
     if (!fs.existsSync(listPath)) {
         return res.json({ content: '' });
     }
@@ -749,7 +822,7 @@ async function startServer() {
   });
 
   app.post("/api/list/content", (req, res) => {
-    const listPath = (req.query.list as string) || DEFAULT_GAME_LIST;
+    const listPath = (req.query.list as string) || appConfig.list;
     const { content } = req.body;
     try {
         const destFolder = path.dirname(listPath);

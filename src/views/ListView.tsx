@@ -280,6 +280,34 @@ export function ListView({
     return { keys, names };
   }, [recordsData]);
 
+  const exportPendingList = () => {
+    const totalPending = gameListData?.remainingGames?.length || 0;
+    if (totalPending === 0) {
+      alert("Nenhum jogo pendente para exportar!");
+      return;
+    }
+
+    let fileContent = "";
+    remainingGroups.forEach((group: any) => {
+      const providerName = group.providerName || "Sem provedor";
+      if (normalizeGameName(providerName) !== normalizeGameName("Sem provedor")) {
+        fileContent += `Provedor: ${providerName}\r\n`;
+      }
+      group.games?.forEach((game: any) => {
+        fileContent += `${game.displayName || game.normalized}\r\n`;
+      });
+      fileContent += "\r\n";
+    });
+
+    const blob = new Blob([fileContent.trim()], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "lista-de-pendentes.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-8 relative">
       <div className="flex justify-between items-end">
@@ -293,7 +321,11 @@ export function ListView({
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent-hover transition-colors text-sm font-semibold active:scale-95 shadow-[0_0_15px_rgba(0,120,212,0.3)]">
+          <button 
+            onClick={exportPendingList}
+            disabled={!gameListData?.remainingGames?.length}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent/80 transition-colors text-sm font-semibold active:scale-95 shadow-[0_0_15px_rgba(0,120,212,0.3)] disabled:opacity-40 disabled:hover:bg-fluent-accent"
+          >
             <Download className="w-4 h-4" />
             Exportar Pendentes
           </button>
