@@ -12,7 +12,7 @@ import {
   Package,
   Search,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 type ViewMode = "gallery" | "list";
 type SortOrder = "newest" | "oldest";
@@ -102,6 +102,541 @@ function downloadCsv(provider: ProviderRecord, games: RecordGame[]) {
 function getImageUrl(path?: string) {
   return path ? `/api/image?path=${encodeURIComponent(path)}` : fallbackImage;
 }
+
+type ProviderBrand = {
+  name: string;
+  bgGradient: string;
+  glowColor: string;
+  badgeBg: string;
+  icon: React.ReactNode;
+  brandText: string;
+  tagline: string;
+};
+
+function getProviderBrand(providerName: string): ProviderBrand {
+  const normalized = normalizeText(providerName)
+    .replace(/[:.]/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+
+  switch (normalized) {
+    case "1x2":
+    case "1x2gaming":
+    case "1x2network":
+      return {
+        name: "1x2gaming",
+        bgGradient: "from-amber-600 via-stone-900 to-amber-950",
+        glowColor: "rgba(245,158,11,0.25)",
+        badgeBg: "bg-amber-500/10 border-amber-500/20",
+        brandText: "1X2 GAMING",
+        tagline: "SPORTS & CASINO",
+        icon: (
+          <svg className="w-12 h-12 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+        )
+      };
+    case "amatic":
+    case "amaticindustries":
+      return {
+        name: "Amatic",
+        bgGradient: "from-blue-700 via-slate-900 to-blue-950",
+        glowColor: "rgba(29,78,216,0.3)",
+        badgeBg: "bg-blue-500/10 border-blue-500/20",
+        brandText: "AMATIC",
+        tagline: "INDUSTRIES",
+        icon: (
+          <svg className="w-12 h-12 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+          </svg>
+        )
+      };
+    case "amigogaming":
+    case "amigo":
+      return {
+        name: "Amigo Gaming",
+        bgGradient: "from-purple-700 via-fuchsia-950 to-neutral-900",
+        glowColor: "rgba(168,85,247,0.3)",
+        badgeBg: "bg-purple-500/10 border-purple-500/20",
+        brandText: "AMIGO GAMING",
+        tagline: "PURE JOY PLAY",
+        icon: (
+          <svg className="w-12 h-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />
+          </svg>
+        )
+      };
+    case "bgaming":
+      return {
+        name: "BGaming",
+        bgGradient: "from-red-650 via-neutral-950 to-neutral-900",
+        glowColor: "rgba(239,68,68,0.25)",
+        badgeBg: "bg-red-500/10 border-red-500/20",
+        brandText: "BGAMING",
+        tagline: "BE CREATIVE",
+        icon: (
+          <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+          </svg>
+        )
+      };
+    case "btg":
+    case "bigtimegaming":
+      return {
+        name: "Big Time Gaming",
+        bgGradient: "from-yellow-600 via-stone-900 to-amber-950",
+        glowColor: "rgba(234,179,8,0.3)",
+        badgeBg: "bg-yellow-500/10 border-yellow-500/20",
+        brandText: "B T G",
+        tagline: "BIG TIME GAMING",
+        icon: (
+          <svg className="w-12 h-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg>
+        )
+      };
+    case "endorphina":
+      return {
+        name: "Endorphina",
+        bgGradient: "from-fuchsia-600 via-purple-950 to-neutral-950",
+        glowColor: "rgba(217,70,239,0.3)",
+        badgeBg: "bg-fuchsia-500/10 border-fuchsia-500/20",
+        brandText: "ENDORPHINA",
+        tagline: "CHEMISTRY OF SLOTS",
+        icon: (
+          <svg className="w-12 h-12 text-fuchsia-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75zm-.375 0h.008v.015h-.008V9.75zM12 17c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75" />
+          </svg>
+        )
+      };
+    case "evolution":
+    case "evolutiongaming":
+      return {
+        name: "Evolution",
+        bgGradient: "from-neutral-800 via-stone-950 to-slate-950",
+        glowColor: "rgba(255,255,255,0.08)",
+        badgeBg: "bg-orange-500/10 border-orange-500/20",
+        brandText: "EVOLUTION",
+        tagline: "LIVE CASINO WORLD",
+        icon: (
+          <svg className="w-12 h-12 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21V9.75M3.284 14.253A8.966 8.966 0 0112 9.75M3.284 14.253a9.003 9.003 0 0017.432 0M20.716 14.253A8.966 8.966 0 0012 9.75" />
+          </svg>
+        )
+      };
+    case "evoplay":
+      return {
+        name: "Evoplay",
+        bgGradient: "from-sky-700 via-indigo-950 to-neutral-900",
+        glowColor: "rgba(14,165,233,0.3)",
+        badgeBg: "bg-sky-500/10 border-sky-500/20",
+        brandText: "EVOPLAY",
+        tagline: "GAMING REVOLUTION",
+        icon: (
+          <svg className="w-12 h-12 text-sky-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-8.22-8.22m11.96 0A9 9 0 115.37 15.59m11.96-11.96L3.75 20.25" />
+          </svg>
+        )
+      };
+    case "fatpanda":
+      return {
+        name: "Fat Panda",
+        bgGradient: "from-emerald-700 via-stone-950 to-amber-950",
+        glowColor: "rgba(16,185,129,0.3)",
+        badgeBg: "bg-emerald-500/10 border-emerald-500/20",
+        brandText: "FAT PANDA",
+        tagline: "SPECIAL CHARACTERS",
+        icon: (
+          <svg className="w-12 h-12 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0ZM9.75 9.75c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
+          </svg>
+        )
+      };
+    case "fazi":
+      return {
+        name: "Fazi",
+        bgGradient: "from-rose-650 via-red-955 to-neutral-950",
+        glowColor: "rgba(225,29,72,0.3)",
+        badgeBg: "bg-rose-500/10 border-rose-500/20",
+        brandText: "FAZI",
+        tagline: "CLASSIC SLOTS",
+        icon: (
+          <svg className="w-12 h-12 text-rose-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74 4.77m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+          </svg>
+        )
+      };
+    case "galaxsys":
+      return {
+        name: "Galaxsys",
+        bgGradient: "from-indigo-700 via-slate-950 to-fuchsia-955",
+        glowColor: "rgba(124,58,237,0.3)",
+        badgeBg: "bg-indigo-500/10 border-indigo-500/20",
+        brandText: "GALAXSYS",
+        tagline: "FASTEST CASINO COVERS",
+        icon: (
+          <svg className="w-12 h-12 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1.5M12 19.5V21M3.75 12h1.5m13.5 0h1.5m-2.25-6.364l-1.06 1.06m-9.192 9.192l-1.06 1.06m13.06 0l-1.06-1.06M6.364 6.364l-1.06-1.06M12 7.5a4.5 4.5 0 100 9 4.5 4.5 0 000-9z" />
+          </svg>
+        )
+      };
+    case "gamingcorps":
+    case "gamingcorp":
+      return {
+        name: "Gaming Corps",
+        bgGradient: "from-lime-600 via-stone-900 to-neutral-950",
+        glowColor: "rgba(163,230,53,0.25)",
+        badgeBg: "bg-lime-500/10 border-lime-500/20",
+        brandText: "GAMING CORPS",
+        tagline: "GAME INNOVATORS",
+        icon: (
+          <svg className="w-12 h-12 text-lime-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75l3 3m0 0l6-6M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      };
+    case "habanero":
+      return {
+        name: "Habanero",
+        bgGradient: "from-orange-600 via-red-950 to-neutral-900",
+        glowColor: "rgba(234,88,12,0.3)",
+        badgeBg: "bg-orange-500/10 border-orange-500/20",
+        brandText: "HABANERO",
+        tagline: "HOT PREMIUM PLAYS",
+        icon: (
+          <svg className="w-12 h-12 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.047 8.287 8.287 0 009 9.601a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+          </svg>
+        )
+      };
+    case "hacksaw":
+    case "hacksawgaming":
+      return {
+        name: "Hacksaw Gaming",
+        bgGradient: "from-stone-700 via-zinc-950 to-black",
+        glowColor: "rgba(255,255,255,0.08)",
+        badgeBg: "bg-slate-400/10 border-slate-400/20",
+        brandText: "HACKSAW",
+        tagline: "DISRUPTIVE CASINO ART",
+        icon: (
+          <svg className="w-12 h-12 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.011 12.5h2.235m-2.235 3h2.235M5.011 9.5h2.235m-2.235 3h2.235m3-6H5.011v12h13.978V6.5H8.011z" />
+          </svg>
+        )
+      };
+    case "imaginelive":
+      return {
+        name: "Imagine Live",
+        bgGradient: "from-indigo-805 via-purple-950 to-stone-950",
+        glowColor: "rgba(168,85,247,0.25)",
+        badgeBg: "bg-purple-500/10 border-purple-500/20",
+        brandText: "IMAGINE LIVE",
+        tagline: "LUXURY DEALER SUITE",
+        icon: (
+          <svg className="w-12 h-12 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        )
+      };
+    case "irondog":
+    case "irondogstudio":
+      return {
+        name: "Iron Dog Studio",
+        bgGradient: "from-stone-605 via-neutral-900 to-amber-955",
+        glowColor: "rgba(120,113,108,0.25)",
+        badgeBg: "bg-stone-500/10 border-stone-500/20",
+        brandText: "IRON DOG",
+        tagline: "CLASSIC SHIELDS",
+        icon: (
+          <svg className="w-12 h-12 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+          </svg>
+        )
+      };
+    case "nolimit":
+    case "nolimitcity":
+    case "nolimitcitygaming":
+      return {
+        name: "Nolimit City",
+        bgGradient: "from-yellow-600 via-neutral-950 to-neutral-900",
+        glowColor: "rgba(234,179,8,0.35)",
+        badgeBg: "bg-yellow-500/15 border-yellow-500/30",
+        brandText: "NOLIMIT_CITY",
+        tagline: "NO BOUNDARIES SLOTS",
+        icon: (
+          <svg className="w-12 h-12 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.0">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+        )
+      };
+    case "pgsoft":
+    case "pocketgamessoft":
+      return {
+        name: "PG SOFT",
+        bgGradient: "from-orange-500 via-stone-900 to-neutral-950",
+        glowColor: "rgba(249,115,22,0.3)",
+        badgeBg: "bg-orange-500/10 border-orange-500/20",
+        brandText: "PG SOFT",
+        tagline: "DIFFERENCE MAKES VALUE",
+        icon: (
+          <svg className="w-12 h-12 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l8.25-11.25 8.25 11.25M12 2.25V21" />
+          </svg>
+        )
+      };
+    case "platipus":
+      return {
+        name: "Platipus",
+        bgGradient: "from-teal-600 via-teal-950 to-neutral-950",
+        glowColor: "rgba(13,148,136,0.3)",
+        badgeBg: "bg-teal-500/10 border-teal-500/20",
+        brandText: "PLATIPUS",
+        tagline: "INNOVATIVE INTERACTION",
+        icon: (
+          <svg className="w-12 h-12 text-teal-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9" />
+          </svg>
+        )
+      };
+    case "playngo":
+    case "playandgo":
+      return {
+        name: "Play'n GO",
+        bgGradient: "from-emerald-600 via-slate-950 to-teal-900",
+        glowColor: "rgba(16,185,129,0.25)",
+        badgeBg: "bg-emerald-500/10 border-emerald-500/20",
+        brandText: "PLAY`N GO",
+        tagline: "EMBOLDEN CASINO SUITES",
+        icon: (
+          <svg className="w-12 h-12 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.91 11.672a.375.375 0 010 .656l-5.603 3.113a.375.375 0 01-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112z" />
+          </svg>
+        )
+      };
+    case "playson":
+      return {
+        name: "Playson",
+        bgGradient: "from-purple-700 via-indigo-950 to-stone-900",
+        glowColor: "rgba(168,85,247,0.25)",
+        badgeBg: "bg-purple-500/10 border-purple-500/20",
+        brandText: "PLAYSON",
+        tagline: "CLASS ACTION SHIELDS",
+        icon: (
+          <svg className="w-12 h-12 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499c.184-.377.724-.377.908 0l1.502 3.043 3.358.489c.417.061.583.57.281.867l-2.43 2.367.574 3.344c.071.416-.363.73-.733.535L12 14.542l-3.006 1.58c-.37.195-.804-.118-.733-.535l.574-3.344-2.43-2.367c-.302-.297-.136-.806.28-.867l3.359-.489 1.502-3.043z" />
+          </svg>
+        )
+      };
+    case "playtech":
+      return {
+        name: "Playtech",
+        bgGradient: "from-blue-600 via-cyan-950 to-neutral-900",
+        glowColor: "rgba(37,99,235,0.3)",
+        badgeBg: "bg-blue-500/10 border-blue-500/20",
+        brandText: "PLAYTECH",
+        tagline: "SUCCESS SOURCE CODE",
+        icon: (
+          <svg className="w-12 h-12 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+          </svg>
+        )
+      };
+    case "popok":
+    case "popokgaming":
+      return {
+        name: "PopOK Gaming",
+        bgGradient: "from-pink-600 via-rose-950 to-neutral-900",
+        glowColor: "rgba(219,39,119,0.3)",
+        badgeBg: "bg-pink-500/10 border-pink-500/20",
+        brandText: "POPOK GAMING",
+        tagline: "POP YOUR FEELINGS",
+        icon: (
+          <svg className="w-12 h-12 text-rose-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 01-6.364 0M21 12a9 9 0 11-18 0 9 9 0 0118 0Z" />
+          </svg>
+        )
+      };
+    case "pragmaticplay":
+      return {
+        name: "Pragmatic Play",
+        bgGradient: "from-amber-600 via-neutral-900 to-amber-950",
+        glowColor: "rgba(245,158,11,0.35)",
+        badgeBg: "bg-amber-500/10 border-amber-500/20",
+        brandText: "PRAGMATIC PLAY",
+        tagline: "PREMIUM SLOTS SYSTEM",
+        icon: (
+          <svg className="w-12 h-12 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 22h20V10l-4 4-4-6-4 6-4-4V22zm10-14.5c1.38 0 2.5-1.12 2.5-2.5S13.38 2.5 12 2.5 9.5 3.62 9.5 5 10.62 7.5 12 7.5z" />
+          </svg>
+        )
+      };
+    case "prospectgaming":
+    case "prospect":
+      return {
+        name: "Prospect Gaming",
+        bgGradient: "from-teal-605 via-emerald-950 to-neutral-900",
+        glowColor: "rgba(13,148,136,0.25)",
+        badgeBg: "bg-teal-500/10 border-teal-500/20",
+        brandText: "PROSPECT GAMING",
+        tagline: "GLORY MINER GEAR",
+        icon: (
+          <svg className="w-12 h-12 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 12h18M12 3l9 9-9 9-9-9 9-9Z" />
+          </svg>
+        )
+      };
+    case "redtiger":
+    case "redtigergaming":
+      return {
+        name: "Red Tiger",
+        bgGradient: "from-red-700 via-rose-950 to-stone-950",
+        glowColor: "rgba(220,38,38,0.3)",
+        badgeBg: "bg-red-500/10 border-red-500/20",
+        brandText: "RED TIGER",
+        tagline: "SCIENCE OF GAMES",
+        icon: (
+          <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        )
+      };
+    case "rubyplay":
+    case "ruby":
+      return {
+        name: "Rubyplay",
+        bgGradient: "from-rose-650 via-pink-950 to-zinc-950",
+        glowColor: "rgba(225,29,72,0.3)",
+        badgeBg: "bg-rose-500/10 border-rose-500/20",
+        brandText: "RUBYPLAY",
+        tagline: "PRECIOUS SPARK",
+        icon: (
+          <svg className="w-12 h-12 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75l3 3m0 0l6-6M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )
+      };
+    case "smartsoft":
+    case "smartsoftgaming":
+      return {
+        name: "Smartsoft",
+        bgGradient: "from-cyan-600 via-blue-950 to-neutral-900",
+        glowColor: "rgba(8,145,178,0.25)",
+        badgeBg: "bg-cyan-500/10 border-cyan-500/20",
+        brandText: "SMARTSOFT",
+        tagline: "CRASH AIR JET",
+        icon: (
+          <svg className="w-12 h-12 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+          </svg>
+        )
+      };
+    case "spinomenal":
+      return {
+        name: "Spinomenal",
+        bgGradient: "from-emerald-600 via-teal-950 to-neutral-950",
+        glowColor: "rgba(16,185,129,0.3)",
+        badgeBg: "bg-emerald-500/10 border-emerald-500/20",
+        brandText: "SPINOMENAL",
+        tagline: "EXTRAORDINARY COVERS",
+        icon: (
+          <svg className="w-12 h-12 text-emerald-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3M3 12c0-1.232.046-2.453.138-3.662a4.006 4.006 0 013.7-3.7 48.656 48.656 0 017.324 0 4.006 4.006 0 013.7 3.7c.017.22.032.441.046.662M3 12l-3-3m3 3L.75 9" />
+          </svg>
+        )
+      };
+    case "spribe":
+      return {
+        name: "SPRIBE",
+        bgGradient: "from-red-600 via-neutral-950 to-neutral-900",
+        glowColor: "rgba(220,38,38,0.3)",
+        badgeBg: "bg-red-500/10 border-red-500/20",
+        brandText: "SPRIBE",
+        tagline: "AVIATION TURBO ENG",
+        icon: (
+          <svg className="w-12 h-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
+          </svg>
+        )
+      };
+    case "tadagaming":
+    case "tada":
+      return {
+        name: "TaDa Gaming",
+        bgGradient: "from-pink-550 via-purple-950 to-neutral-950",
+        glowColor: "rgba(236,72,153,0.3)",
+        badgeBg: "bg-pink-500/15 border-pink-500/20",
+        brandText: "TADA GAMING",
+        tagline: "MAGIC WAND GLITTER",
+        icon: (
+          <svg className="w-12 h-12 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499c.184-.377.724-.377.908 0l1.502 3.043 3.358.489c.417.061.583.57.281.867l-2.43 2.367" />
+          </svg>
+        )
+      };
+    case "wazdan":
+      return {
+        name: "Wazdan",
+        bgGradient: "from-orange-600 via-stone-900 to-amber-950",
+        glowColor: "rgba(249,115,22,0.3)",
+        badgeBg: "bg-orange-500/10 border-orange-500/20",
+        brandText: "WAZDAN",
+        tagline: "PASSION FOR SLOTS",
+        icon: (
+          <svg className="w-12 h-12 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l8.25-11.25 8.25 11.25M12 2.25V21" />
+          </svg>
+        )
+      };
+    default:
+      return {
+        name: providerName,
+        bgGradient: "from-slate-700 via-neutral-900 to-slate-950",
+        glowColor: "rgba(100,116,139,0.15)",
+        badgeBg: "bg-white/5 border-white/10",
+        brandText: providerName.toUpperCase(),
+        tagline: "CASINO PARTNER COVERS",
+        icon: (
+          <svg className="w-12 h-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21V9.75M3.284 14.253A8.966 8.966 0 0112 9.75M3.284 14.253a9.003 9.003 0 0017.432 0M20.716 14.253A8.966 8.966 0 0012 9.75" />
+          </svg>
+        )
+      };
+  }
+}
+
+function ProviderCoverImage({ providerName, coverPath }: { providerName: string; coverPath?: string }) {
+  const brand = getProviderBrand(providerName);
+
+  return (
+    <div className={`w-full h-full bg-gradient-to-br ${brand.bgGradient} flex flex-col items-center justify-center p-6 relative select-none overflow-hidden transition-all duration-550 group-hover:brightness-[1.15]`}>
+      <div 
+        className="absolute w-44 h-44 rounded-full blur-[44px] opacity-40 pointer-events-none" 
+        style={{ backgroundColor: brand.glowColor, left: "calc(50% - 88px)", top: "calc(50% - 88px)" }}
+      />
+      
+      <div className="absolute top-4 left-6 w-1 h-1 bg-white/20 rounded-full" />
+      <div className="absolute top-12 right-12 w-1.5 h-1.5 bg-white/10 rounded-full" />
+      <div className="absolute bottom-6 left-12 w-1.5 h-1.5 bg-white/15 rounded-full" />
+      <div className="absolute bottom-10 right-8 w-1 h-1 bg-white/30 rounded-full" />
+
+      <div className={`p-4 rounded-2xl backdrop-blur-md shadow-lg flex items-center justify-center mb-3 border ${brand.badgeBg} transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3`}>
+        {brand.icon}
+      </div>
+
+      <h3 className="text-xl font-black text-white tracking-widest text-center uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] font-sans">
+        {brand.brandText}
+      </h3>
+
+      <span className="text-[9px] font-bold text-gray-300 tracking-widest uppercase mt-1.5 text-center bg-black/40 px-2.5 py-0.5 rounded border border-white/5 opacity-85 backdrop-blur-sm">
+        {brand.tagline}
+      </span>
+      
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+    </div>
+  );
+}
+
 
 export function RecordsView({ recordsData }: { recordsData: any }) {
   const [selectedProviderKey, setSelectedProviderKey] = useState<string | null>(null);
@@ -391,14 +926,7 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
               className="group text-left rounded-xl overflow-hidden border border-white/10 bg-white/[0.03] hover:bg-white/[0.06] hover:border-fluent-accent/40 transition-all active:scale-[0.99]"
             >
               <div className="aspect-[16/9] bg-white/[0.03] overflow-hidden relative">
-                <img
-                  src={getImageUrl(provider.coverPath)}
-                  alt={provider.providerName}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(event) => {
-                    (event.currentTarget as HTMLImageElement).src = fallbackImage;
-                  }}
-                />
+                <ProviderCoverImage providerName={provider.providerName} coverPath={provider.coverPath} />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
                 <div className="absolute left-4 right-4 bottom-4 flex items-end justify-between gap-3">
                   <div className="min-w-0">
