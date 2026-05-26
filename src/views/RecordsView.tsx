@@ -713,17 +713,6 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
     fetchCustomLogos();
   }, []);
 
-  useEffect(() => {
-    if (isEditModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isEditModalOpen]);
-
   const openEditModal = (provider: any) => {
     setEditingProviderKey(provider.providerKey);
     setEditingProviderName(provider.providerName);
@@ -758,6 +747,14 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
     }
     
     setIsEditModalOpen(true);
+
+    // Rola suavemente até o editor de capas de provedores
+    setTimeout(() => {
+      const el = document.getElementById("provider-cover-editor-panel");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 120);
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -905,6 +902,264 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
     });
   }, [gameFilter, selectedProvider, sortOrder]);
 
+  const renderCustomizationPanel = () => {
+    if (!isEditModalOpen) return null;
+    return (
+      <div 
+        id="provider-cover-editor-panel"
+        className="relative w-full bg-white/[0.03] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 border-t-fluent-accent/50 mb-8 max-w-5xl mx-auto"
+      >
+        {/* Header */}
+        <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 font-sans">
+              <Edit2 className="w-4 h-4 text-fluent-accent" />
+              Personalizar Capa do Provedor
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5 font-sans">Customize o visual da marca, logotipo, título e efeitos de cor.</p>
+          </div>
+          <button
+            onClick={() => setIsEditModalOpen(false)}
+            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all text-sm font-semibold cursor-pointer"
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="p-6 space-y-6 flex-1">
+          
+          {/* Dropdown de Provedor */}
+          <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-2">
+            <label className="text-xs font-semibold text-gray-300 font-sans block">Provedor Ativo para Edição</label>
+            <select
+              value={editingProviderKey}
+              onChange={(e) => {
+                const selected = providers.find(p => p.providerKey === e.target.value);
+                if (selected) openEditModal(selected);
+              }}
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent transition-colors"
+            >
+              {providers.map(p => (
+                <option key={p.providerKey} value={p.providerKey} className="bg-zinc-900 text-white">
+                  {p.providerName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Grid principal */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Coluna de Configuração */}
+            <div className="lg:col-span-7 space-y-5">
+              
+              {/* Nome da Marca & Slogan */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Textos da Capa</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-300 font-sans">Nome da Marca</label>
+                    <input
+                      type="text"
+                      value={customBrandText}
+                      onChange={(e) => setCustomBrandText(e.target.value)}
+                      placeholder="Ex: PRAGMATIC PLAY"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-300 font-sans">Slogan / Tagline</label>
+                    <input
+                      type="text"
+                      value={customTagline}
+                      onChange={(e) => setCustomTagline(e.target.value)}
+                      placeholder="Ex: PREMIUM SPINS"
+                      className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Logotipo */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Logotipo / Logo</h4>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setInputType("file")}
+                      className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        inputType === "file" 
+                          ? "bg-fluent-accent text-white shadow-sm" 
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Carregar Arquivo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputType("url")}
+                      className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
+                        inputType === "url" 
+                          ? "bg-fluent-accent text-white shadow-sm" 
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      Link Web (URL)
+                    </button>
+                  </div>
+
+                  {inputType === "url" ? (
+                    <div className="space-y-1.5 bg-white/[0.02] border border-white/5 p-3 rounded-lg">
+                      <label className="text-xs font-medium text-gray-300 font-sans">URL da Imagem (.png, .webp, .avif)</label>
+                      <input
+                        type="url"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        placeholder="https://exemplo.com/imagem.png"
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div
+                        onDragEnter={handleDrag}
+                        onDragOver={handleDrag}
+                        onDragLeave={handleDrag}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition-all ${
+                          dragActive 
+                            ? "border-fluent-accent bg-fluent-accent/5" 
+                            : "border-white/10 hover:border-white/20 bg-white/[0.02]"
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          id="logo-upload-inline"
+                          accept="image/png, image/webp, image/avif"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <label htmlFor="logo-upload-inline" className="cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-center w-full">
+                          <Upload className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                          <span className="text-xs font-semibold text-gray-300 font-sans">
+                            Clique para selecionar ou arraste
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-sans">
+                            PNG, WebP e AVIF
+                          </span>
+                        </label>
+                      </div>
+
+                      {customFileBase64 && (
+                        <div className="flex items-center gap-2 bg-white/5 border border-white/5 p-2 rounded-lg justify-between">
+                          <span className="text-xs text-green-400 flex items-center gap-1.5 truncate font-sans">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
+                            Imagem carregada!
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setCustomFileBase64("")}
+                            className="text-xs text-rose-500 hover:text-rose-400 font-semibold px-2 py-1 hover:bg-white/5 rounded font-sans"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cor do Tema */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Estilo e Efeitos</h4>
+                </div>
+                <div className="grid grid-cols-5 gap-2 bg-white/[0.02] border border-white/5 p-3 rounded-lg">
+                  {COLOR_THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      onClick={() => setSelectedThemeId(theme.id)}
+                      className={`flex flex-col items-center gap-1 p-1 py-1.5 rounded-lg border text-center transition-all active:scale-95 cursor-pointer ${
+                        selectedThemeId === theme.id 
+                          ? "bg-white/10 border-fluent-accent text-white shadow-md shadow-fluent-accent/10" 
+                          : "bg-white/[0.01] border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      <span className={`w-3.5 h-3.5 rounded-full border border-white/15 shadow-sm ${theme.previewBg}`} />
+                      <span className="text-[9px] truncate max-w-full font-medium font-sans">{theme.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Coluna do Preview */}
+            <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-white/[0.01] border border-white/5 rounded-2xl space-y-4">
+              <span className="text-xs font-semibold text-gray-400 font-sans">Pré-visualização da Capa</span>
+              
+              <div className="w-full max-w-[280px] aspect-[16/9] rounded-xl overflow-hidden border border-white/10 shadow-2xl relative bg-zinc-950/85 md:sticky md:top-4">
+                <ProviderCoverImage 
+                  providerName={editingProviderName}
+                  custom={{
+                    customCover: inputType === "url" ? customUrl : customFileBase64,
+                    customBgGradient: COLOR_THEMES.find(t => t.id === selectedThemeId)?.bgGradient,
+                    customGlowColor: COLOR_THEMES.find(t => t.id === selectedThemeId)?.glowColor,
+                    brandText: customBrandText,
+                    tagline: customTagline
+                  }}
+                />
+              </div>
+              
+              <p className="text-[10px] text-gray-500 text-center max-w-[240px] leading-relaxed font-sans">
+                Efeito glow e efeitos integrados funcionam exatamente como serão mostrados na galeria pública.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleResetCustomLogo}
+            disabled={isSaving}
+            className="px-4 py-2 text-xs font-semibold border border-rose-500/25 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 rounded-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-sans"
+          >
+            Restaurar Padrão
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              disabled={isSaving}
+              className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-sans"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveCustomLogo}
+              disabled={isSaving}
+              className="px-5 py-2 text-xs font-bold bg-fluent-accent hover:bg-fluent-accent-hover text-white rounded-lg active:scale-95 hover:shadow-[0_0_12px_rgba(0,120,212,0.35)] transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer font-sans"
+            >
+              {isSaving ? "Salvando..." : "Salvar Alterações"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!recordsData) {
     return <div className="p-10 text-center opacity-50">Carregando registros...</div>;
   }
@@ -950,6 +1205,8 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
             </div>
           </div>
         </div>
+
+        {renderCustomizationPanel()}
 
         <GlassCard className="!p-4">
           <div className="grid grid-cols-1 xl:grid-cols-[1fr_auto_auto_auto] gap-3 items-center">
@@ -1159,6 +1416,8 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </GlassCard>
       </div>
 
+      {renderCustomizationPanel()}
+
       {recordsData.status === "missing" ? (
         <div className="p-16 text-center text-gray-500 border border-white/10 rounded-xl bg-white/[0.02]">
           A pasta de destino não foi encontrada.
@@ -1223,268 +1482,7 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </div>
       )}
 
-      {/* Visual Customization Modal */}
-      {isEditModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 md:p-6"
-          onClick={() => setIsEditModalOpen(false)}
-        >
-          <div 
-            className="relative w-full max-w-3xl acrylic border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            
-            {/* Header */}
-            <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2 font-sans">
-                  <Edit2 className="w-4 h-4 text-fluent-accent" />
-                  Personalizar Capa do Provedor
-                </h3>
-                <p className="text-xs text-gray-400 mt-0.5 font-sans">Customize o visual da marca, logotipo, título e efeitos de cor.</p>
-              </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all text-sm font-semibold cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
 
-            {/* Content Body */}
-            <div className="p-6 space-y-6 flex-1">
-              
-              {/* Dropdown de Provedor */}
-              <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-2">
-                <label className="text-xs font-semibold text-gray-300 font-sans block font-sans">Provedor Ativo para Edição</label>
-                <select
-                  value={editingProviderKey}
-                  onChange={(e) => {
-                    const selected = providers.find(p => p.providerKey === e.target.value);
-                    if (selected) openEditModal(selected);
-                  }}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-fluent-accent transition-colors"
-                >
-                  {providers.map(p => (
-                    <option key={p.providerKey} value={p.providerKey} className="bg-zinc-900 text-white">
-                      {p.providerName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Grid principal */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* Coluna de Configuração */}
-                <div className="lg:col-span-7 space-y-5">
-                  
-                  {/* Nome da Marca & Slogan */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Textos da Capa</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-300 font-sans">Nome da Marca</label>
-                        <input
-                          type="text"
-                          value={customBrandText}
-                          onChange={(e) => setCustomBrandText(e.target.value)}
-                          placeholder="Ex: PRAGMATIC PLAY"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-gray-300 font-sans">Slogan / Tagline</label>
-                        <input
-                          type="text"
-                          value={customTagline}
-                          onChange={(e) => setCustomTagline(e.target.value)}
-                          placeholder="Ex: PREMIUM SPINS"
-                          className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Logotipo */}
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Logotipo / Logo</h4>
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-1 p-1 bg-white/[0.03] border border-white/5 rounded-lg">
-                        <button
-                          type="button"
-                          onClick={() => setInputType("file")}
-                          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
-                            inputType === "file" 
-                              ? "bg-fluent-accent text-white shadow-sm" 
-                              : "text-gray-400 hover:text-white"
-                          }`}
-                        >
-                          Carregar Arquivo
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setInputType("url")}
-                          className={`py-1.5 text-xs font-semibold rounded-md transition-all ${
-                            inputType === "url" 
-                              ? "bg-fluent-accent text-white shadow-sm" 
-                              : "text-gray-400 hover:text-white"
-                          }`}
-                        >
-                          Link Web (URL)
-                        </button>
-                      </div>
-
-                      {inputType === "url" ? (
-                        <div className="space-y-1.5 bg-white/[0.02] border border-white/5 p-3 rounded-lg">
-                          <label className="text-xs font-medium text-gray-300 font-sans">URL da Imagem (.png, .webp, .avif)</label>
-                          <input
-                            type="url"
-                            value={customUrl}
-                            onChange={(e) => setCustomUrl(e.target.value)}
-                            placeholder="https://exemplo.com/imagem.png"
-                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-fluent-accent placeholder-gray-650 transition-colors font-sans"
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div
-                            onDragEnter={handleDrag}
-                            onDragOver={handleDrag}
-                            onDragLeave={handleDrag}
-                            onDrop={handleDrop}
-                            className={`border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition-all ${
-                              dragActive 
-                                ? "border-fluent-accent bg-fluent-accent/5" 
-                                : "border-white/10 hover:border-white/20 bg-white/[0.02]"
-                            }`}
-                          >
-                            <input
-                              type="file"
-                              id="logo-upload"
-                              accept="image/png, image/webp, image/avif"
-                              onChange={handleFileChange}
-                              className="hidden"
-                            />
-                            <label htmlFor="logo-upload" className="cursor-pointer flex flex-col items-center justify-center space-y-1.5 text-center w-full">
-                              <Upload className="w-5 h-5 text-gray-400 group-hover:text-white" />
-                              <span className="text-xs font-semibold text-gray-300 font-sans">
-                                Clique para selecionar ou arraste
-                              </span>
-                              <span className="text-[10px] text-gray-500 font-sans">
-                                PNG, WebP e AVIF
-                              </span>
-                            </label>
-                          </div>
-
-                          {customFileBase64 && (
-                            <div className="flex items-center gap-2 bg-white/5 border border-white/5 p-2 rounded-lg justify-between">
-                              <span className="text-xs text-green-400 flex items-center gap-1.5 truncate font-sans">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-                                Imagem carregada!
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => setCustomFileBase64("")}
-                                className="text-xs text-rose-500 hover:text-rose-400 font-semibold px-2 py-1 hover:bg-white/5 rounded font-sans"
-                              >
-                                Remover
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Cor do Tema */}
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 font-sans">Estilo e Efeitos</h4>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2 bg-white/[0.02] border border-white/5 p-3 rounded-lg">
-                      {COLOR_THEMES.map((theme) => (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          onClick={() => setSelectedThemeId(theme.id)}
-                          className={`flex flex-col items-center gap-1 p-1 py-1.5 rounded-lg border text-center transition-all active:scale-95 cursor-pointer ${
-                            selectedThemeId === theme.id 
-                              ? "bg-white/10 border-fluent-accent text-white shadow-md shadow-fluent-accent/10" 
-                              : "bg-white/[0.01] border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
-                          }`}
-                        >
-                          <span className={`w-3.5 h-3.5 rounded-full border border-white/15 shadow-sm ${theme.previewBg}`} />
-                          <span className="text-[9px] truncate max-w-full font-medium font-sans">{theme.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* Coluna do Preview */}
-                <div className="lg:col-span-5 flex flex-col items-center justify-center p-4 bg-white/[0.01] border border-white/5 rounded-2xl space-y-4">
-                  <span className="text-xs font-semibold text-gray-400 font-sans">Pré-visualização da Capa</span>
-                  
-                  <div className="w-full max-w-[280px] aspect-[16/9] rounded-xl overflow-hidden border border-white/10 shadow-2xl relative bg-zinc-950/85">
-                    <ProviderCoverImage 
-                      providerName={editingProviderName}
-                      custom={{
-                        customCover: inputType === "url" ? customUrl : customFileBase64,
-                        customBgGradient: COLOR_THEMES.find(t => t.id === selectedThemeId)?.bgGradient,
-                        customGlowColor: COLOR_THEMES.find(t => t.id === selectedThemeId)?.glowColor,
-                        brandText: customBrandText,
-                        tagline: customTagline
-                      }}
-                    />
-                  </div>
-                  
-                  <p className="text-[10px] text-gray-500 text-center max-w-[240px] leading-relaxed font-sans">
-                    Efeito glow e efeitos integrados funcionam exatamente como serão mostrados na galeria pública.
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 bg-white/[0.02] border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={handleResetCustomLogo}
-                disabled={isSaving}
-                className="px-4 py-2 text-xs font-semibold border border-rose-500/25 text-rose-400 bg-rose-500/5 hover:bg-rose-500/10 rounded-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-sans"
-              >
-                Restaurar Padrão
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  disabled={isSaving}
-                  className="px-4 py-2 text-xs font-semibold bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer font-sans"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveCustomLogo}
-                  disabled={isSaving}
-                  className="px-5 py-2 text-xs font-bold bg-fluent-accent hover:bg-fluent-accent-hover text-white rounded-lg active:scale-95 hover:shadow-[0_0_12px_rgba(0,120,212,0.35)] transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer font-sans"
-                >
-                  {isSaving ? "Salvando..." : "Salvar Alterações"}
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
     </div>
   );
 }
