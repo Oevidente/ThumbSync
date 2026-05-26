@@ -248,8 +248,8 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                 )}
                 {selectedMode === 'watch' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <p className="text-sm text-gray-300">A pasta de origem será monitorada continuamente. Novos arquivos serão copiados automaticamente.</p>
-                        <p className="text-[10px] text-blue-400 mt-2 italic font-semibold">O sistema ficará em modo de vigia a cada 5 segundos.</p>
+                        <p className="text-sm text-gray-300">A pasta de origem será monitorada continuamente. Novos arquivos serão adicionados à fila e a divisão de tempo será recalculada conforme o horário configurado.</p>
+                        <p className="text-[10px] text-purple-400 mt-2 italic font-semibold">Sincronização standby com cálculo de divisão de tempo.</p>
                     </motion.div>
                 )}
 
@@ -324,7 +324,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
             </div>
           ) : (
             <div className="space-y-8">
-              {currentMode !== 'watch' && (
+              {status.progress !== undefined && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-400">{isFinished ? "Concluído" : "Processando..."}</span>
@@ -363,8 +363,8 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                    <p className="text-2xl font-bold text-red-400">{status.failed}</p>
                 </div>
                 <div className="bg-white/5 p-4 rounded-lg border border-white/5">
-                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{currentMode === 'watch' ? 'Verificações' : 'Total Lote'}</p>
-                   <p className="text-2xl font-bold text-blue-400">{currentMode === 'watch' ? '∞' : status.total}</p>
+                   <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold mb-1">{currentMode === 'watch' ? 'Fila Standby' : 'Total Lote'}</p>
+                   <p className="text-2xl font-bold text-blue-400">{status.total}</p>
                 </div>
               </div>
 

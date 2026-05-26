@@ -792,48 +792,114 @@ async function startServer() {
       currentFileWaiting: null
     };
 
-    const copiedSourceVersions = new Map<string, number>();
+    // Run dynamic time-splitting watch mode as an active loop
+    (async () => {
+      let lastQueueSignature = "";
 
-    // Use interval but skip logic if outside time window
-    watchInterval = setInterval(() => {
-        if (!currentCopyState || currentCopyState.status !== 'running' || currentCopyState.mode !== 'watch') {
-            if (watchInterval) {
-              clearInterval(watchInterval);
-              watchInterval = null;
+      while (currentCopyState && currentCopyState.status === 'running' && currentCopyState.mode === 'watch') {
+        try {
+          const win = buildWorkWindow(new Date(), settings);
+          const now = new Date();
+          
+          // Check if outside of-office hours
+          if (now.getTime() < win.startAt.getTime() || now.getTime() > win.endAt.getTime()) {
+            currentCopyState.waitingForWindow = true;
+            currentCopyState.nextCopyAt = win.startAt.getTime();
+            currentCopyState.currentFileWaiting = null;
+            
+            // Sleep for 5 seconds and poll again
+            await new Promise(r => setTimeout(r, 5000));
+            continue;
+          }
+
+          currentCopyState.waitingForWindow = false;
+
+          // Scan directories
+          const data = collectComparisonData(source, dest);
+          const pendingFiles = buildCopyQueue(data.pendingFiles, settings);
+
+          if (pendingFiles.length === 0) {
+            currentCopyState.currentFileWaiting = null;
+            currentCopyState.nextCopyAt = 0;
+            currentCopyState.total = 0;
+            currentCopyState.progress = 100;
+            lastQueueSignature = "";
+
+            // Sleep for 5 seconds and check again
+            await new Promise(r => setTimeout(r, 5000));
+            continue;
+          }
+
+          // Generate unique queue signature (combining paths and modification times) to detect updates/additions
+          const currentSignature = pendingFiles.map(f => `${getCopyQueueKey(f)}:${getFileModifiedAtMs(f)}`).join('|');
+
+          // If signature changed OR we don't have a scheduled copy time yet, recalculate division of time
+          if (currentSignature !== lastQueueSignature || currentCopyState.nextCopyAt === 0) {
+            lastQueueSignature = currentSignature;
+
+            const nowMs = Date.now();
+            const availableWindowMs = Math.max(0, win.endAt.getTime() - nowMs);
+            
+            let firstCopyDelayMs = 0;
+            if (nowMs < win.firstCopyReleaseAt.getTime()) {
+              firstCopyDelayMs = Math.max(0, win.firstCopyReleaseAt.getTime() - nowMs);
+            } else {
+              // Recalculate time spacing to stretch files across remaining window
+              firstCopyDelayMs = Math.max(0, Math.floor(availableWindowMs / pendingFiles.length));
+              
+              // Cap interval to a maximum of MAX_INTERVAL_MINUTES (10 mins) for small queues to ensure usability
+              const maxIntervalMs = MAX_INTERVAL_MINUTES * 60 * 1000;
+              if (firstCopyDelayMs > maxIntervalMs) {
+                firstCopyDelayMs = maxIntervalMs;
+              }
             }
-            return;
-        }
 
-        const win = buildWorkWindow(new Date(), settings);
-        const now = new Date();
-        if (now.getTime() < win.startAt.getTime() || now.getTime() > win.endAt.getTime()) {
-             currentCopyState.waitingForWindow = true;
-             currentCopyState.nextCopyAt = win.startAt.getTime();
-             return; // Do nothing until time window shifts
-        }
-        
-        currentCopyState.waitingForWindow = false;
+            const delays = buildStretchDelaySchedule(pendingFiles.length, firstCopyDelayMs, availableWindowMs);
+            const delay = delays[0] || 0;
 
-        const data = collectComparisonData(source, dest);
-        const pendingFiles = buildCopyQueue(data.pendingFiles, settings);
-        
-        if (pendingFiles.length > 0) {
-            for (const file of pendingFiles) {
-                const copyKey = getCopyQueueKey(file);
-                const sourceVersion = getFileModifiedAtMs(file);
-                if (copiedSourceVersions.get(copyKey) === sourceVersion) continue;
+            currentCopyState.nextCopyAt = nowMs + delay;
+            currentCopyState.total = pendingFiles.length;
+            
+            const nextFile = pendingFiles[0];
+            currentCopyState.currentFileWaiting = nextFile.relativePath.split(/[\\/]/).pop();
+            
+            // Calculate progress
+            const remainingCount = pendingFiles.length;
+            const totalCount = currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped + remainingCount;
+            currentCopyState.progress = totalCount > 0 ? Math.round(((currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped) / totalCount) * 100) : 100;
+          }
 
-                try {
-                    copyPendingFile(file);
-                    copiedSourceVersions.set(copyKey, sourceVersion);
-                    currentCopyState.copied++;
-                    recordCopiedFile(currentCopyState, file);
-                } catch (err) {
-                    currentCopyState.failed++;
-                }
+          // Check if it's copy time
+          const nowMs = Date.now();
+          if (nowMs >= currentCopyState.nextCopyAt) {
+            const fileToCopy = pendingFiles[0];
+            try {
+              copyPendingFile(fileToCopy);
+              currentCopyState.copied++;
+              recordCopiedFile(currentCopyState, fileToCopy);
+            } catch (err) {
+              currentCopyState.failed++;
+              console.error(`Error copying file ${fileToCopy.relativePath} in standby watch:`, err);
             }
+
+            // Mark completed so the next tick immediately triggers a fresh scan and schedule rebuild
+            currentCopyState.nextCopyAt = 0;
+            
+            // Recalculate progress for the next tick
+            const remainingCount = pendingFiles.length - 1;
+            const totalCount = currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped + remainingCount;
+            currentCopyState.progress = totalCount > 0 ? Math.round(((currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped) / totalCount) * 100) : 100;
+          }
+
+          // Tick sleep (2 seconds) to keep scanning responsive and react quickly to additions
+          await new Promise(r => setTimeout(r, 2000));
+
+        } catch (error) {
+          console.error("Error in standby watch loop:", error);
+          await new Promise(r => setTimeout(r, 5000));
         }
-    }, 5000);
+      }
+    })();
 
     res.json({ status: "started" });
   });
