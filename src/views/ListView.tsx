@@ -8,6 +8,8 @@ import {
   Save,
   X,
   Plus,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 
@@ -32,6 +34,97 @@ function createProviderGameKey(
   normalizedGameName: string,
 ) {
   return `${normalizeGameName(providerName || 'Sem provedor')}::${normalizedGameName}`;
+}
+
+function ListViewProviderGroup({
+  group,
+  groupIndex,
+  sentData,
+  isReadySection,
+}: {
+  key?: string;
+  group: any;
+  groupIndex: number;
+  sentData?: any;
+  isReadySection: boolean;
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded bg-[#151515]/95 hover:bg-[#1a1a1a]/95 border border-white/10 px-2.5 py-1.5 font-sans text-[11px] ${
+          isReadySection ? 'text-blue-200' : 'text-orange-200'
+        } backdrop-blur text-left cursor-pointer transition-colors`}
+      >
+        <span className="font-semibold truncate flex items-center gap-1.5">
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          )}
+          Provedor: {group.providerName}
+        </span>
+        <span
+          className={`shrink-0 rounded px-2 py-0.5 text-[10px] ${
+            isReadySection
+              ? 'bg-blue-500/15 text-blue-300'
+              : 'bg-orange-500/15 text-orange-300'
+          }`}
+        >
+          {group.games?.length || 0}
+        </span>
+      </button>
+
+      {isExpanded && (
+        <div className="space-y-1 pl-1 border-l border-white/5 ml-2">
+          {group.games?.map((game: any, i: number) => {
+            if (isReadySection) {
+              const normalizedName =
+                game.normalized || normalizeGameName(game.displayName);
+              const providerName = game.providerName || group.providerName;
+              const gameKey = createProviderGameKey(
+                providerName,
+                normalizedName,
+              );
+
+              let isSent = sentData?.keys.has(gameKey);
+              if (
+                !isSent &&
+                normalizeGameName(providerName) ===
+                  normalizeGameName('Sem provedor')
+              ) {
+                isSent = sentData?.names.has(normalizedName);
+              }
+
+              return (
+                <div
+                  key={`${game.displayName}-${i}`}
+                  className={`py-1.2 px-2 rounded border text-xs text-gray-300 font-sans truncate ${
+                    isSent
+                      ? 'bg-green-500/10 border-green-500/20'
+                      : 'bg-blue-500/10 border-blue-500/20'
+                  }`}
+                >
+                  {game.displayName}
+                </div>
+              );
+            } else {
+              return (
+                <div
+                  key={`${game.displayName}-${i}`}
+                  className="py-1.2 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate"
+                >
+                  {game.displayName}
+                </div>
+              );
+            }
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ListView({
@@ -309,22 +402,22 @@ export function ListView({
   };
 
   return (
-    <div className="space-y-8 relative">
-      <div className="flex justify-between items-end">
+    <div className="space-y-6 md:space-y-8 relative">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
-            <List className="w-8 h-8 text-fluent-accent" />
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 flex items-center gap-2.5">
+            <List className="w-6 h-6 md:w-8 md:h-8 text-fluent-accent" />
             Gestão da Lista
           </h1>
-          <p className="text-gray-400">
+          <p className="text-xs md:text-sm text-gray-400">
             Gerenciamento da lista mestre (lista.txt).
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex w-full sm:w-auto">
           <button 
             onClick={exportPendingList}
             disabled={!gameListData?.remainingGames?.length}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent/80 transition-colors text-sm font-semibold active:scale-95 shadow-[0_0_15px_rgba(0,120,212,0.3)] disabled:opacity-40 disabled:hover:bg-fluent-accent"
+            className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 rounded-lg bg-fluent-accent text-white hover:bg-fluent-accent/80 transition-colors text-xs md:text-sm font-semibold active:scale-95 shadow-[0_0_15px_rgba(0,120,212,0.3)] disabled:opacity-40 disabled:hover:bg-fluent-accent"
           >
             <Download className="w-4 h-4" />
             Exportar Pendentes
@@ -333,35 +426,38 @@ export function ListView({
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <GlassCard className="flex flex-col h-[600px] !p-0 overflow-hidden">
-          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
-            <h3 className="font-bold flex items-center gap-2">
-              <List className="w-4 h-4 text-fluent-accent" />
-              Conteúdo Bruto (lista.txt)
+        <GlassCard className="flex flex-col h-[650px] !p-0 overflow-hidden">
+          <div className="p-3 sm:p-4 border-b border-white/10 flex justify-between items-center bg-white/[0.02] gap-2">
+            <h3 className="font-bold flex items-center gap-2 text-xs sm:text-base text-white truncate">
+              <List className="w-4 h-4 text-fluent-accent shrink-0" />
+              <span className="hidden sm:inline">Lista de Jogos</span>
+              <span className="inline sm:hidden">Lista</span>
             </h3>
             {!isEditing ? (
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2">
                 <button
                   onClick={() => setIsAddModalOpen(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-sm font-semibold transition-colors active:scale-95 shadow-[0_4px_12px_rgba(0,120,212,0.25)]"
+                  className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-xs sm:text-sm font-semibold transition-colors active:scale-95 shadow-[0_4px_12px_rgba(0,120,212,0.25)] cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Adicionar Jogos
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span>Adicionar</span>
+                  <span className="hidden sm:inline">Jogos</span>
                 </button>
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-sm transition-colors border border-white/5 hover:border-white/20 active:scale-95 text-white"
+                  className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-md bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition-colors border border-white/5 hover:border-white/20 active:scale-95 text-white cursor-pointer"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Editar Arquivo
+                  <Edit2 className="w-3.5 h-3.5 shrink-0" />
+                  <span>Editar</span>
+                  <span className="hidden sm:inline">Arquivo</span>
                 </button>
               </div>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-1.5 sm:gap-2">
                 <button
                   onClick={() => setIsEditing(false)}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors border border-transparent hover:bg-white/5 active:scale-95 text-gray-400 hover:text-white"
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs sm:text-sm transition-colors border border-transparent hover:bg-white/5 active:scale-95 text-gray-400 hover:text-white cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                   Cancelar
@@ -369,10 +465,10 @@ export function ListView({
                 <button
                   onClick={saveListContent}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-sm font-medium transition-colors border border-transparent active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 rounded-md bg-fluent-accent text-white hover:bg-fluent-accent-hover text-xs sm:text-sm font-medium transition-colors border border-transparent active:scale-95 disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  Salvar Alterações
+                  Salvar
                 </button>
               </div>
             )}
@@ -388,60 +484,25 @@ export function ListView({
                 spellCheck="false"
               />
             ) : (
-              <div className="absolute inset-0 p-4 bg-[#0a0a0a]/50 text-gray-400 font-mono text-sm whitespace-pre-wrap">
-                <div className="grid grid-cols-2 gap-4 h-full">
-                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col min-h-0">
-                    <h4 className="font-bold mb-3 flex items-center gap-2 text-fluent-accent shrink-0">
+              <div className="absolute inset-0 p-3 sm:p-4 bg-[#0a0a0a]/50 text-gray-400 font-mono text-sm whitespace-pre-wrap overflow-y-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white/[0.01] rounded-lg border border-white/5 p-3 sm:p-4 flex flex-col min-h-[350px] md:min-h-0 md:h-[570px]">
+                    <h4 className="font-bold mb-1 flex items-center gap-2 text-fluent-accent shrink-0 text-xs sm:text-sm">
                       <CheckCircle className="w-4 h-4" />
                       Prontos ({gameListData.completedGames})
                     </h4>
-                    <p className="text-xs text-gray-500 mb-2 italic shrink-0">
+                    <p className="text-[10px] sm:text-xs text-gray-500 mb-3 italic shrink-0">
                       Jogos que constam na lista e já possuem miniatura.
                     </p>
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                    <div className="max-h-[300px] md:max-h-none md:flex-1 md:overflow-y-auto space-y-4 pr-1 sm:pr-2 custom-scrollbar">
                       {readyGroups.map((group: any, groupIndex: number) => (
-                        <div
-                          key={`${group.providerName}-${groupIndex}`}
-                          className="space-y-1.5"
-                        >
-                          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] text-blue-200 backdrop-blur">
-                            <span className="font-semibold truncate">
-                              Provedor: {group.providerName}
-                            </span>
-                            <span className="shrink-0 rounded bg-blue-500/15 px-2 py-0.5 text-[10px] text-blue-300">
-                              {group.games?.length || 0}
-                            </span>
-                          </div>
-                          {group.games?.map((game: any, i: number) => {
-                            const normalizedName =
-                              game.normalized ||
-                              normalizeGameName(game.displayName);
-                            const providerName =
-                              game.providerName || group.providerName;
-                            const gameKey = createProviderGameKey(
-                              providerName,
-                              normalizedName,
-                            );
-
-                            let isSent = sentData.keys.has(gameKey);
-                            if (
-                              !isSent &&
-                              normalizeGameName(providerName) ===
-                                normalizeGameName('Sem provedor')
-                            ) {
-                              isSent = sentData.names.has(normalizedName);
-                            }
-
-                            return (
-                              <div
-                                key={`${game.displayName}-${i}`}
-                                className={`py-1.5 px-2 rounded border text-xs text-gray-300 font-sans truncate ${isSent ? 'bg-green-500/10 border-green-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}
-                              >
-                                {game.displayName}
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <ListViewProviderGroup
+                          key={`ready-${group.providerName}-${groupIndex}`}
+                          group={group}
+                          groupIndex={groupIndex}
+                          sentData={sentData}
+                          isReadySection={true}
+                        />
                       ))}
                       {gameListData.readyGames?.length === 0 && (
                         <p className="text-center py-20 text-gray-600 text-xs italic">
@@ -450,38 +511,22 @@ export function ListView({
                       )}
                     </div>
                   </div>
-                  <div className="bg-white/[0.02] rounded-lg border border-white/5 p-4 flex flex-col min-h-0">
-                    <h4 className="font-bold mb-3 flex items-center gap-2 text-orange-400 shrink-0">
+                  <div className="bg-white/[0.01] rounded-lg border border-white/5 p-3 sm:p-4 flex flex-col min-h-[350px] md:min-h-0 md:h-[570px]">
+                    <h4 className="font-bold mb-1 flex items-center gap-2 text-orange-400 shrink-0 text-xs sm:text-sm">
                       <Clock className="w-4 h-4" />
                       Faltando ({gameListData.remainingGames?.length || 0})
                     </h4>
-                    <p className="text-xs text-gray-500 mb-2 italic shrink-0">
-                      Jogos na lista que não foram encontrados nas miniaturas
-                      prontas.
+                    <p className="text-[10px] sm:text-xs text-gray-500 mb-3 italic shrink-0">
+                      Jogos na lista sem imagem correspondente.
                     </p>
-                    <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                    <div className="max-h-[300px] md:max-h-none md:flex-1 md:overflow-y-auto space-y-4 pr-1 sm:pr-2 custom-scrollbar">
                       {remainingGroups.map((group: any, groupIndex: number) => (
-                        <div
-                          key={`${group.providerName}-${groupIndex}`}
-                          className="space-y-1.5"
-                        >
-                          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] text-orange-200 backdrop-blur">
-                            <span className="font-semibold truncate">
-                              Provedor: {group.providerName}
-                            </span>
-                            <span className="shrink-0 rounded bg-orange-500/15 px-2 py-0.5 text-[10px] text-orange-300">
-                              {group.games?.length || 0}
-                            </span>
-                          </div>
-                          {group.games?.map((game: any, i: number) => (
-                            <div
-                              key={`${game.displayName}-${i}`}
-                              className="py-1.5 px-2 rounded bg-orange-500/10 border border-orange-500/20 text-xs text-gray-300 font-sans truncate"
-                            >
-                              {game.displayName}
-                            </div>
-                          ))}
-                        </div>
+                        <ListViewProviderGroup
+                          key={`remaining-${group.providerName}-${groupIndex}`}
+                          group={group}
+                          groupIndex={groupIndex}
+                          isReadySection={false}
+                        />
                       ))}
                       {gameListData.remainingGames?.length === 0 && (
                         <p className="text-center py-20 text-gray-600 text-xs italic">

@@ -7,9 +7,11 @@ import {
   Package,
   CheckCircle,
   UploadCloud,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Fragment, useMemo } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 
 function getBoundedPercent(value: number, total: number) {
   if (!total) return 0;
@@ -109,6 +111,80 @@ function getProviderGroups(
   return games?.length ? [{ providerName: 'Sem provedor', games }] : [];
 }
 
+function DashboardProviderGroupItem({
+  title,
+  group,
+  groupIndex,
+  toneClasses,
+  sentData,
+}: {
+  key?: string;
+  title: string;
+  group: any;
+  groupIndex: number;
+  toneClasses: any;
+  sentData?: { keys: Set<string>; names: Set<string> };
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded bg-[#151515]/95 hover:bg-[#1a1a1a]/95 border border-white/10 px-2.5 py-1.5 font-sans text-[11px] ${toneClasses.header} backdrop-blur text-left cursor-pointer transition-colors`}
+      >
+        <span className="font-semibold truncate flex items-center gap-1.5">
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+          )}
+          Provedor: {group.providerName}
+        </span>
+        <span
+          className={`shrink-0 rounded px-2 py-0.5 text-[10px] ${toneClasses.badge}`}
+        >
+          {group.games?.length || 0}
+        </span>
+      </button>
+
+      {isExpanded && (
+        <div className="space-y-1 pl-1 border-l border-white/5 ml-2">
+          {group.games?.map((game: any, i: number) => {
+            const normalizedName =
+              game.normalized || normalizeGameName(game.displayName);
+            const providerName = game.providerName || group.providerName;
+            const gameKey = createProviderGameKey(
+              providerName,
+              normalizedName,
+            );
+
+            const isSent = !!(
+              sentData?.keys.has(gameKey) ||
+              (normalizeGameName(providerName) ===
+                normalizeGameName('Sem provedor') &&
+                sentData?.names.has(normalizedName))
+            );
+
+            const itemClasses = isSent
+              ? 'bg-green-500/10 border-green-500/20'
+              : toneClasses.item;
+
+            return (
+              <div
+                key={`${title}-${group.providerName}-${game.displayName}-${i}`}
+                className={`py-1.5 px-2 rounded border text-xs text-gray-300 font-sans truncate ${itemClasses}`}
+              >
+                {game.displayName}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CompactProviderList({
   title,
   count,
@@ -157,53 +233,14 @@ function CompactProviderList({
       </div>
       <div className="max-h-[280px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
         {groups.map((group: any, groupIndex: number) => (
-          <div
+          <DashboardProviderGroupItem
             key={`${title}-${group.providerName}-${groupIndex}`}
-            className="space-y-1.5"
-          >
-            <div
-              className={`sticky top-0 z-10 flex items-center justify-between gap-3 rounded bg-[#151515]/95 border border-white/10 px-2 py-1.5 font-sans text-[11px] ${toneClasses.header} backdrop-blur`}
-            >
-              <span className="font-semibold truncate">
-                Provedor: {group.providerName}
-              </span>
-              <span
-                className={`shrink-0 rounded px-2 py-0.5 text-[10px] ${toneClasses.badge}`}
-              >
-                {group.games?.length || 0}
-              </span>
-            </div>
-            {group.games?.map((game: any, i: number) => {
-              const normalizedName =
-                game.normalized || normalizeGameName(game.displayName);
-              const providerName = game.providerName || group.providerName;
-              const gameKey = createProviderGameKey(
-                providerName,
-                normalizedName,
-              );
-
-              // Lógica de match igual ao backend: Provedor::Nome OU apenas Nome se for Sem Provedor
-              const isSent = !!(
-                sentData?.keys.has(gameKey) ||
-                (normalizeGameName(providerName) ===
-                  normalizeGameName('Sem provedor') &&
-                  sentData?.names.has(normalizedName))
-              );
-
-              const itemClasses = isSent
-                ? 'bg-green-500/10 border-green-500/20'
-                : toneClasses.item;
-
-              return (
-                <div
-                  key={`${title}-${group.providerName}-${game.displayName}-${i}`}
-                  className={`py-1.5 px-2 rounded border text-xs text-gray-300 font-sans truncate ${itemClasses}`}
-                >
-                  {game.displayName}
-                </div>
-              );
-            })}
-          </div>
+            title={title}
+            group={group}
+            groupIndex={groupIndex}
+            toneClasses={toneClasses}
+            sentData={sentData}
+          />
         ))}
         {count === 0 && (
           <p className="text-center py-12 text-gray-600 text-xs italic">
@@ -358,23 +395,23 @@ export function Dashboard({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
         {stats.map((stat) => (
           <Fragment key={stat.label}>
-            <GlassCard hover className="flex items-start gap-5 !p-5 relative">
+            <GlassCard hover className="flex items-center md:items-start gap-2.5 md:gap-5 !p-3 md:!p-5 relative min-w-0">
               <div
                 className={`absolute -inset-1 ${stat.glow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`}
               />
               <div
-                className={`p-3 rounded-xl bg-white/5 ${stat.color} relative z-10`}
+                className={`p-1.5 md:p-3 rounded-lg md:rounded-xl bg-white/5 ${stat.color} relative z-10 shrink-0`}
               >
-                <stat.icon className="w-6 h-6" />
+                <stat.icon className="w-4 h-4 md:w-6 md:h-6" />
               </div>
-              <div className="relative z-10">
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">
+              <div className="relative z-10 min-w-0">
+                <p className="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 md:mb-1 truncate">
                   {stat.label}
                 </p>
-                <p className="text-2xl font-bold tracking-tight">
+                <p className="text-base md:text-2xl font-bold tracking-tight">
                   {stat.value}
                 </p>
               </div>

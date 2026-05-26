@@ -17,7 +17,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   ];
 
   return (
-    <div className="w-[260px] h-screen bg-[#191919]/95 backdrop-blur-[20px] border-r border-white/5 flex flex-col p-5 fixed left-0 top-0 z-50">
+    <div className="hidden md:flex w-[260px] h-screen bg-[#191919]/95 backdrop-blur-[20px] border-r border-white/5 flex flex-col p-5 fixed left-0 top-0 z-50">
       <div className="flex items-center gap-3 px-1 mb-10 mt-2">
         <div className="w-6 h-6 rounded bg-fluent-accent flex items-center justify-center shadow-[0_0_15px_rgba(0,120,212,0.4)]">
           <Database className="w-3.5 h-3.5 text-white" />
