@@ -27,7 +27,7 @@ let appConfig = {
 
 const PENDING_LIST_EXPORT_FILE = 'lista-de-pendentes.txt';
 const DEFAULT_BATCH_SIZE = 17;
-const MAX_BATCH_SIZE = 17;
+const MAX_BATCH_SIZE = 1000;
 const FILE_TIME_TOLERANCE_MS = 1000;
 type CopyOrder = 'newest' | 'oldest';
 

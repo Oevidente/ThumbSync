@@ -18,7 +18,10 @@ function formatLogTime(value: any) {
 
 export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [status, setStatus] = useState<any>({ status: 'idle' });
-  const [sendLimit, setSendLimit] = useState(16);
+  const [sendLimit, setSendLimit] = useState<number>(() => {
+    const saved = localStorage.getItem("sendLimit");
+    return saved ? parseInt(saved, 10) || 17 : 17;
+  });
   const [isStarting, setIsStarting] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [selectedMode, setSelectedMode] = useState<'scheduled' | 'immediate' | 'watch'>('scheduled');
@@ -226,7 +229,12 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                                 type="number"
                                 disabled={isRunning}
                                 value={sendLimit}
-                                onChange={(e) => setSendLimit(parseInt(e.target.value))}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10);
+                                  const newVal = Number.isNaN(val) ? 0 : val;
+                                  setSendLimit(newVal);
+                                  localStorage.setItem("sendLimit", newVal.toString());
+                                }}
                                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 focus:outline-none focus:border-fluent-accent disabled:opacity-50"
                             />
                         </div>
@@ -292,7 +300,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
               </button>
             ) : (
               <button
-                disabled={(selectedMode !== 'watch' && pendingFiles.length === 0) || isStarting}
+                disabled={(selectedMode !== 'watch' && (pendingFiles.length === 0 || (selectedMode === 'scheduled' && sendLimit <= 0))) || isStarting}
                 onClick={startProcess}
                 className={`w-full py-3 rounded-lg text-white transition-all flex items-center justify-center gap-2 font-semibold group disabled:opacity-50 disabled:cursor-not-allowed ${selectedMode === 'watch' ? 'bg-purple-600 hover:bg-purple-700' : 'bg-fluent-accent hover:bg-fluent-accent-hover'}`}
               >
