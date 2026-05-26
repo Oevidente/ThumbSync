@@ -1,7 +1,74 @@
 import { GlassCard } from "../components/GlassCard.tsx";
-import { RefreshCw, FileCheck, AlertCircle, Clock, Package, CheckCircle } from "lucide-react";
+import { RefreshCw, FileCheck, AlertCircle, Clock, Package, CheckCircle, UploadCloud } from "lucide-react";
 import { motion } from "motion/react";
 import { Fragment } from "react";
+
+function getBoundedPercent(value: number, total: number) {
+  if (!total) return 0;
+  return Math.min(100, Math.max(0, Math.round((value / total) * 100)));
+}
+
+function normalizeGameName(value = "") {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\.webp$/i, "")
+    .replace(/:/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function getFileNameFromPath(value = "") {
+  return String(value).split(/[\\/]/).pop() || value;
+}
+
+function createProviderGameKey(providerName: string, normalizedGameName: string) {
+  return `${normalizeGameName(providerName || "Sem provedor")}::${normalizedGameName}`;
+}
+
+function getSentGamesCount(gameListData: any, recordsData: any) {
+  if (typeof gameListData?.sentGamesCount === "number") return gameListData.sentGamesCount;
+
+  const listedGames = [
+    ...(gameListData?.readyGames || []),
+    ...(gameListData?.remainingGames || []),
+  ];
+  const providers = recordsData?.providers || [];
+  if (!listedGames.length || !providers.length) return 0;
+
+  const sentGameNames = new Set<string>();
+  const sentProviderGameKeys = new Set<string>();
+
+  providers.forEach((provider: any) => {
+    const providerName = provider?.providerName || "Sem provedor";
+
+    provider?.games?.forEach((game: any) => {
+      const fileName = game?.fileName || getFileNameFromPath(game?.relativePath || game?.destPath || game?.displayName);
+      const normalizedGameName = normalizeGameName(fileName || game?.displayName);
+      if (!normalizedGameName) return;
+
+      sentGameNames.add(normalizedGameName);
+      sentProviderGameKeys.add(createProviderGameKey(game?.providerName || providerName, normalizedGameName));
+    });
+  });
+
+  return listedGames.filter((game: any) => {
+    const providerName = game?.providerName || "Sem provedor";
+    const normalizedGameName = game?.normalized || normalizeGameName(game?.displayName);
+    if (!normalizedGameName) return false;
+
+    const providerKey = normalizeGameName(providerName);
+    const gameKey = createProviderGameKey(providerName, normalizedGameName);
+
+    if (providerKey === normalizeGameName("Sem provedor")) {
+      return sentProviderGameKeys.has(gameKey) || sentGameNames.has(normalizedGameName);
+    }
+
+    return sentProviderGameKeys.has(gameKey);
+  }).length;
+}
 
 function getProviderGroups(gameListData: any, groupedKey: string, flatKey: string) {
   const groups = gameListData?.[groupedKey];
@@ -11,20 +78,27 @@ function getProviderGroups(gameListData: any, groupedKey: string, flatKey: strin
   return games?.length ? [{ providerName: "Sem provedor", games }] : [];
 }
 
-function CompactProviderList({ title, count, groups, tone, icon: Icon }: { title: string, count: number, groups: any[], tone: "green" | "orange", icon: any }) {
-  const toneClasses = tone === "green"
-    ? {
-        title: "text-green-400",
-        header: "text-green-200",
-        badge: "bg-green-500/15 text-green-300",
-        item: "bg-green-500/10 border-green-500/20",
-      }
-    : {
-        title: "text-orange-400",
-        header: "text-orange-200",
-        badge: "bg-orange-500/15 text-orange-300",
-        item: "bg-orange-500/10 border-orange-500/20",
-      };
+function CompactProviderList({ title, count, groups, tone, icon: Icon }: { title: string, count: number, groups: any[], tone: "blue" | "green" | "orange", icon: any }) {
+  const toneClasses = {
+    blue: {
+      title: "text-fluent-accent",
+      header: "text-blue-200",
+      badge: "bg-blue-500/15 text-blue-300",
+      item: "bg-blue-500/10 border-blue-500/20",
+    },
+    green: {
+      title: "text-green-400",
+      header: "text-green-200",
+      badge: "bg-green-500/15 text-green-300",
+      item: "bg-green-500/10 border-green-500/20",
+    },
+    orange: {
+      title: "text-orange-400",
+      header: "text-orange-200",
+      badge: "bg-orange-500/15 text-orange-300",
+      item: "bg-orange-500/10 border-orange-500/20",
+    },
+  }[tone];
 
   return (
     <div className="min-h-0 flex flex-col rounded-xl bg-white/[0.02] border border-white/5 p-4">
@@ -59,11 +133,23 @@ function CompactProviderList({ title, count, groups, tone, icon: Icon }: { title
 export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData: any, onRefresh: () => void, isLoading: boolean }) {
   if (!analysisData) return <div className="p-10 text-center opacity-50">Carregando dados...</div>;
 
+  const totalListedGames = analysisData.gameListData?.totalListedGames || 0;
+  const completedGames = analysisData.gameListData?.completedGames || 0;
+  const rawSentGames = getSentGamesCount(analysisData.gameListData, analysisData.recordsData);
+  const sentGames = totalListedGames ? Math.min(rawSentGames, totalListedGames) : rawSentGames;
+  const remainingGames = analysisData.gameListData?.remainingGames?.length ?? Math.max(totalListedGames - completedGames, 0);
+  const completedPercent = getBoundedPercent(completedGames, totalListedGames);
+  const sentPercent = getBoundedPercent(sentGames, totalListedGames);
+  const circleLength = 527;
+  const completedDashOffset = circleLength - (circleLength * completedPercent) / 100;
+  const sentDashOffset = circleLength - (circleLength * sentPercent) / 100;
+
   const stats = [
     { label: "Origem", value: analysisData.totalSourceFiles, icon: Package, color: "text-blue-400", glow: "bg-blue-500/20" },
     { label: "Pendentes", value: analysisData.pendingFiles.length, icon: AlertCircle, color: "text-orange-400", glow: "bg-orange-500/20" },
-    { label: "Jogos Feitos", value: analysisData.gameListData?.completedGames || 0, icon: FileCheck, color: "text-green-400", glow: "bg-green-500/20" },
-    { label: "Lista Total", value: analysisData.gameListData?.totalListedGames || 0, icon: Clock, color: "text-purple-400", glow: "bg-purple-500/20" },
+    { label: "Jogos Feitos", value: completedGames, icon: FileCheck, color: "text-fluent-accent", glow: "bg-blue-500/20" },
+    { label: "Enviados", value: sentGames, icon: UploadCloud, color: "text-green-400", glow: "bg-green-500/20" },
+    { label: "Lista Total", value: totalListedGames, icon: Clock, color: "text-purple-400", glow: "bg-purple-500/20" },
   ];
   const readyGroups = getProviderGroups(analysisData.gameListData, "readyGamesByProvider", "readyGames");
   const remainingGroups = getProviderGroups(analysisData.gameListData, "remainingGamesByProvider", "remainingGames");
@@ -91,7 +177,7 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {stats.map((stat) => (
           <Fragment key={stat.label}>
             <GlassCard hover className="flex items-start gap-5 !p-5 relative">
@@ -164,7 +250,7 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
           <div className="absolute top-0 right-0 w-32 h-32 bg-fluent-accent/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
           <h3 className="text-xl font-bold mb-8">Saúde do Acervo</h3>
           <div className="relative h-48 flex items-center justify-center">
-            <svg className="w-48 h-48 transform -rotate-90">
+            <svg className="w-48 h-48 transform -rotate-90 overflow-visible" viewBox="0 0 192 192" aria-hidden="true">
               <circle
                 cx="96"
                 cy="96"
@@ -183,27 +269,52 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
                 strokeWidth="12"
                 strokeDasharray={527}
                 initial={{ strokeDashoffset: 527 }}
-                animate={{ strokeDashoffset: 527 - (527 * (analysisData.gameListData?.completedGames || 0) / (analysisData.gameListData?.totalListedGames || 1)) }}
+                animate={{ strokeDashoffset: completedDashOffset }}
                 transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
                 className="text-fluent-accent"
                 strokeLinecap="round"
               />
+              <motion.circle
+                cx="96"
+                cy="96"
+                r="84"
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="12"
+                strokeDasharray={527}
+                initial={{ strokeDashoffset: 527 }}
+                animate={{ strokeDashoffset: sentDashOffset }}
+                transition={{ duration: 1.6, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                className="text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.45)]"
+                strokeLinecap="round"
+              />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-black tracking-tighter">
-                {Math.round(((analysisData.gameListData?.completedGames || 0) / (analysisData.gameListData?.totalListedGames || 1)) * 100)}%
+              <span className="text-4xl font-black text-green-300">
+                {sentPercent}%
               </span>
-              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Status Global</span>
+              <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest mt-1">Enviados</span>
+              <span className="text-[11px] text-fluent-accent font-semibold mt-1">{completedPercent}% feitos</span>
             </div>
           </div>
-          <div className="mt-10 grid grid-cols-2 gap-4">
-             <div className="space-y-1">
-               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block">Feitos</span>
-               <span className="text-lg font-bold text-white">{analysisData.gameListData?.completedGames || 0}</span>
+          <div className="mt-10 grid grid-cols-3 gap-4">
+             <div className="space-y-1 min-w-0">
+               <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                 <span className="w-2 h-2 rounded-full bg-fluent-accent" />
+                 Feitos
+               </span>
+               <span className="text-lg font-bold text-white">{completedGames}</span>
              </div>
-             <div className="space-y-1">
+             <div className="space-y-1 min-w-0">
+               <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                 <span className="w-2 h-2 rounded-full bg-green-400" />
+                 Enviados
+               </span>
+               <span className="text-lg font-bold text-white">{sentGames}</span>
+             </div>
+             <div className="space-y-1 min-w-0">
                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block">Faltam</span>
-               <span className="text-lg font-bold text-white">{analysisData.gameListData?.remainingGames?.length || 0}</span>
+               <span className="text-lg font-bold text-white">{remainingGames}</span>
              </div>
           </div>
         </GlassCard>
@@ -222,14 +333,14 @@ export function Dashboard({ analysisData, onRefresh, isLoading }: { analysisData
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <CompactProviderList
             title="Feitos"
-            count={analysisData.gameListData?.completedGames || 0}
+            count={completedGames}
             groups={readyGroups}
-            tone="green"
+            tone="blue"
             icon={CheckCircle}
           />
           <CompactProviderList
             title="Faltando"
-            count={analysisData.gameListData?.remainingGames?.length || 0}
+            count={remainingGames}
             groups={remainingGroups}
             tone="orange"
             icon={Clock}

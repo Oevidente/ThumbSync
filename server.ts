@@ -449,14 +449,21 @@ async function startServer() {
             .map(f => createProviderGameKeyFromRelativePath(f.relativePath))
             .filter(Boolean)
         );
+        const sentGameNames = new Set<string>();
+        const sentProviderGameKeys = new Set<string>();
         let currentProviderName = 'Sem provedor';
         
         // Add existing in dest
         collectWebpFiles(dest).forEach(f => {
           const relativePath = path.relative(dest, f);
           const providerGameKey = createProviderGameKeyFromRelativePath(relativePath);
-          if (providerGameKey) createdProviderGameKeys.add(providerGameKey);
-          createdGameNames.add(normalizeGameName(getFileNameFromRelativePath(relativePath)));
+          if (providerGameKey) {
+            createdProviderGameKeys.add(providerGameKey);
+            sentProviderGameKeys.add(providerGameKey);
+          }
+          const normalizedGameName = normalizeGameName(getFileNameFromRelativePath(relativePath));
+          createdGameNames.add(normalizedGameName);
+          sentGameNames.add(normalizedGameName);
         });
 
         content.split(/\r?\n/).forEach(line => {
@@ -487,12 +494,27 @@ async function startServer() {
           return createdProviderGameKeys.has(gameKey);
         };
 
+        const isGameSent = (game: any) => {
+          const providerKey = normalizeGameName(game.providerName || 'Sem provedor');
+          const gameKey = createProviderGameKey(game.providerName || 'Sem provedor', game.normalized);
+
+          if (providerKey === normalizeGameName('Sem provedor')) {
+            return sentProviderGameKeys.has(gameKey) || sentGameNames.has(game.normalized);
+          }
+
+          return sentProviderGameKeys.has(gameKey);
+        };
+
         const remaining = listedGames.filter(g => !isGameCreated(g));
         const readyGames = listedGames.filter(g => isGameCreated(g));
+        const sentGames = listedGames.filter(g => isGameSent(g));
         gameListData = {
           status: 'ok',
           totalListedGames: listedGames.length,
           completedGames: readyGames.length,
+          sentGamesCount: sentGames.length,
+          sentGames,
+          sentGamesByProvider: groupGamesByProvider(sentGames),
           remainingGames: remaining,
           remainingGamesByProvider: groupGamesByProvider(remaining),
           readyGames: readyGames,
