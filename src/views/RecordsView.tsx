@@ -1226,11 +1226,11 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
       {/* Visual Customization Modal */}
       {isEditModalOpen && (
         <div 
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 md:p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 md:p-6"
           onClick={() => setIsEditModalOpen(false)}
         >
           <div 
-            className="relative w-full max-w-3xl bg-[#191919] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto"
+            className="relative w-full max-w-3xl acrylic border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             
