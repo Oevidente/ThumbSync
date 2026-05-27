@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings, Download } from 'lucide-react';
+import { Home, Search, Play, FileText, Archive, Settings } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
@@ -15,65 +15,6 @@ export default function App() {
   const [config, setConfig] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isAnalyzingRef = useRef(false);
-
-  // Estados relacionados ao PWA e Instalação no Celular
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
-
-  useEffect(() => {
-    // 1. Detectar se o aplicativo já está rodando em modo independente (instalado)
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                        (navigator as any).standalone === true;
-    setIsInstalled(!!isStandalone);
-
-    // 2. Detectar se é dispositivo iOS
-    const detectIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(detectIOS);
-
-    // No iOS, se não estiver instalado em modo Standalone, o banner é exibido como dica de como fixar na tela inicial
-    if (detectIOS && !isStandalone) {
-      setShowInstallBanner(true);
-    }
-
-    // 3. Capturar o evento beforeinstallprompt (Android / Chrome)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      if (!isStandalone) {
-        setShowInstallBanner(true);
-      }
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // 4. Capturar se o app foi instalado com sucesso
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setShowInstallBanner(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setIsInstalled(true);
-        setShowInstallBanner(false);
-      }
-      setDeferredPrompt(null);
-    }
-  };
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -187,15 +128,6 @@ export default function App() {
           <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
         <div className="flex items-center gap-2">
-          {!isInstalled && (
-            <button
-              onClick={() => setShowInstallBanner(true)}
-              className="flex items-center gap-1.5 text-[10px] font-extrabold text-[#30d158] uppercase bg-[#30d158]/10 border border-[#30d158]/15 px-2.5 py-1 rounded-full tracking-wider font-sans hover:bg-[#30d158]/20 transition-all cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-[#30d158]" />
-              Instalar
-            </button>
-          )}
           <div className="text-[10px] font-black text-[#0a84ff] uppercase bg-[#0a84ff]/10 border border-[#0a84ff]/15 px-2.5 py-1 rounded-full tracking-wider font-sans">
             {menuItems.find(item => item.id === activeTab)?.label}
           </div>
@@ -238,59 +170,6 @@ export default function App() {
         })}
       </nav>
 
-      {/* Banner de Instalação PWA (Focado em Dispositivos Móveis) */}
-      <AnimatePresence>
-        {showInstallBanner && !isInstalled && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="md:hidden fixed bottom-22 left-4 right-4 z-50 bg-zinc-950/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-4 shadow-[0_10px_50px_rgba(0,0,0,0.8)] flex flex-col gap-3 font-sans"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <img 
-                  src="./logodosite.jpg" 
-                  alt="ThumbSync Icon" 
-                  className="w-10 h-10 rounded-xl shadow-[0_0_15px_rgba(10,132,255,0.3)] object-cover"
-                />
-                <div>
-                  <h4 className="font-bold text-xs text-white">Instalar o Aplicativo</h4>
-                  <p className="text-[11px] text-zinc-400">Adicione o ThumbSync à tela inicial do seu celular!</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowInstallBanner(false)}
-                className="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer text-sm"
-              >
-                &times;
-              </button>
-            </div>
-
-            {isIOS ? (
-              <div className="bg-[#0a84ff]/10 text-[#0a84ff] rounded-xl p-3 text-[10.5px] leading-relaxed border border-[#0a84ff]/25">
-                <span className="font-bold text-white">No iPhone/iPad:</span> Toque no ícone de compartilhar <span className="font-bold font-sans text-xs">↑</span> no Safari (na barra inferior do navegador) e depois selecione <span className="font-bold text-white">"Adicionar à Tela de Início"</span>.
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 mt-1">
-                <button
-                  onClick={handleInstallClick}
-                  className="flex-1 bg-[#0a84ff] hover:bg-[#0070e0] active:scale-[0.98] text-white text-[11px] font-bold py-2 px-3 rounded-lg shadow-lg shadow-[#0a84ff]/20 transition-all text-center cursor-pointer"
-                >
-                  Instalar Agora
-                </button>
-                <button
-                  onClick={() => setShowInstallBanner(false)}
-                  className="flex-1 bg-white/5 hover:bg-white/10 text-white text-[11px] font-semibold py-2 px-3 rounded-lg transition-all text-center border border-white/5 cursor-pointer"
-                >
-                  Agora Não
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
