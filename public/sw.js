@@ -2,6 +2,9 @@ const CACHE_NAME = 'thumbsync-cache-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
+  './icon-192.png',
+  './icon-512.png',
+  './manifest.webmanifest',
   './logodosite.jpg',
   './favicon.svg'
 ];
