@@ -1403,25 +1403,24 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
     );
   }
 
-  return (
-    <div className="space-y-8 relative">
+    return (
+    <div className="space-y-8 animate-fade-in relative z-10">
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight mb-2 flex items-center gap-3">
-            <Database className="w-8 h-8 text-fluent-accent" />
+          <h1 className="text-3xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
             Registros
           </h1>
-          <p className="text-gray-400">Galeria dos provedores com jogos já presentes no destino.</p>
+          <p className="text-zinc-400 text-xs md:text-sm font-semibold tracking-wide">Galeria dos provedores de apostas/cassino com jogos já presentes no destino.</p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full lg:w-auto shrink-0 select-none">
           <div className="relative w-full lg:w-[260px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
             <input
               type="text"
               placeholder="Filtrar provedores..."
               value={providerFilter}
               onChange={(event) => setProviderFilter(event.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-lg focus:outline-none focus:border-fluent-accent transition-colors text-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none transition-all duration-250 font-sans"
             />
           </div>
           
@@ -1431,7 +1430,7 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
                 openEditModal(providers[0]);
               }
             }}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-fluent-accent hover:bg-fluent-accent/80 hover:shadow-[0_0_15px_rgba(0,120,212,0.4)] transition-all text-sm font-semibold text-white active:scale-95 shrink-0"
+            className="glass-btn-primary !py-2.5 !px-5 text-sm shrink-0"
           >
             <Edit2 className="w-4 h-4" />
             Editar Capas
@@ -1439,32 +1438,32 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 md:grid-cols-3 md:gap-4">
-        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
-          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-fluent-accent/10 text-fluent-accent shrink-0">
-            <Database className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 select-none">
+        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
+          <div className="p-1.5 sm:p-2.5 rounded-xl bg-[#0a84ff]/10 text-[#0a84ff] shrink-0">
+            <Database className="w-4.5 h-4.5 sm:w-5 h-5" />
           </div>
-          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
-            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">Provedores</p>
-            <p className="text-xs sm:text-2xl font-bold truncate max-w-full">{providers.length}</p>
-          </div>
-        </GlassCard>
-        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
-          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-green-500/10 text-green-400 shrink-0">
-            <Package className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
-          </div>
-          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
-            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full font-sans">Jogos no destino</p>
-            <p className="text-xs sm:text-2xl font-bold truncate max-w-full">{totalGames}</p>
+          <div className="min-w-0 flex flex-col w-full text-left">
+            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Provedores</p>
+            <p className="text-sm sm:text-lg md:text-xl font-black text-white truncate max-w-full font-sans">{providers.length}</p>
           </div>
         </GlassCard>
-        <GlassCard className="!p-1.5 sm:!p-5 flex flex-col sm:flex-row items-center sm:items-center justify-center sm:justify-start gap-1 sm:gap-4 text-center sm:text-left min-w-0 aspect-square sm:aspect-auto">
-          <div className="p-1 sm:p-3 rounded sm:rounded-xl bg-white/5 text-gray-300 shrink-0">
-            <Clock className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
+          <div className="p-1.5 sm:p-2.5 rounded-xl bg-[#30d158]/10 text-[#30d158] shrink-0">
+            <Package className="w-4.5 h-4.5 sm:w-5 h-5" />
           </div>
-          <div className="min-w-0 flex flex-col items-center sm:items-start w-full">
-            <p className="text-[8px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">Última alteração</p>
-            <p className="text-[8px] sm:text-base font-bold truncate max-w-full leading-normal">{formatDate(latestUpdateMs)}</p>
+          <div className="min-w-0 flex flex-col w-full text-left">
+            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Jogos no destino</p>
+            <p className="text-sm sm:text-lg md:text-xl font-black text-white truncate max-w-full font-sans">{totalGames}</p>
+          </div>
+        </GlassCard>
+        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
+          <div className="p-1.5 sm:p-2.5 rounded-xl bg-white/[0.03] text-zinc-350 shrink-0 border border-white/[0.05]">
+            <Clock className="w-4.5 h-4.5 sm:w-5 h-5" />
+          </div>
+          <div className="min-w-0 flex flex-col w-full text-left">
+            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Última alteração</p>
+            <p className="text-[11px] sm:text-sm font-black text-white truncate max-w-full leading-normal font-sans">{formatDate(latestUpdateMs)}</p>
           </div>
         </GlassCard>
       </div>

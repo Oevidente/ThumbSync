@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-// Importações sem a extensão .tsx para evitar avisos do compilador:
 import { Sidebar } from './components/Sidebar';
 import { Home, Search, Play, FileText, Archive, Settings, Database } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
@@ -111,30 +110,34 @@ export default function App() {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#070709] bg-radial-[at_top_right] from-zinc-900 via-[#070709] to-black text-white relative overflow-x-hidden selection:bg-[#0a84ff]/20 selection:text-white">
+      {/* Decorative ambient light halo (macOS-inspired visual elements) */}
+      <div className="absolute pointer-events-none top-[-25%] right-[-15%] w-[650px] h-[650px] bg-[#0a84ff]/8 rounded-full blur-[140px] z-0" />
+      <div className="absolute pointer-events-none bottom-[-20%] left-[-15%] w-[600px] h-[600px] bg-[#30d158]/5 rounded-full blur-[130px] z-0" />
+
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Mobile Sticky Header */}
-      <header className="md:hidden sticky top-0 z-40 bg-[#161616]/95 backdrop-blur-md border-b border-white/5 px-4 py-3 flex items-center justify-between shadow-[0_4px_20px_rgba(0,0,0,0.4)]">
-        <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded bg-[#0078d4] flex items-center justify-center shadow-[0_0_10px_rgba(0,120,212,0.4)]">
-            <Database className="w-3 h-3 text-white" />
+      <header className="md:hidden sticky top-0 z-40 bg-[#070709]/85 backdrop-blur-xl border-b border-white/[0.05] px-5 py-4 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] select-none">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-lg bg-[#0a84ff] flex items-center justify-center shadow-[0_0_15px_rgba(10,132,255,0.45)]">
+            <Database className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-bold text-sm tracking-tight text-white">ThumbSync</span>
+          <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
-        <div className="text-[11px] font-bold text-[#0078d4] uppercase bg-[#0078d4]/10 px-2 py-0.5 rounded border border-[#0078d4]/20">
+        <div className="text-[10px] font-black text-[#0a84ff] uppercase bg-[#0a84ff]/10 border border-[#0a84ff]/15 px-2.5 py-1 rounded-full tracking-wider font-sans">
           {menuItems.find(item => item.id === activeTab)?.label}
         </div>
       </header>
 
-      <main className="ml-0 md:ml-[260px] flex-1 p-4 md:p-8 pb-28 md:pb-8">
+      <main className="ml-0 md:ml-[260px] flex-1 p-5 md:p-8 lg:p-10 pb-28 md:pb-10 z-10 relative">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
+            initial={{ opacity: 0, scale: 0.99, y: 12, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 0.99, y: -12, filter: 'blur(10px)' }}
+            transition={{ duration: 0.28, cubicBezier: [0.16, 1, 0.3, 1] }}
             className="max-w-6xl mx-auto"
           >
             {renderContent()}
@@ -143,7 +146,7 @@ export default function App() {
       </main>
 
       {/* Mobile Floating Bottom Bar Menu */}
-      <nav className="md:hidden fixed bottom-4 left-4 right-4 z-40 bg-[#161616]/95 backdrop-blur-xl border border-white/10 rounded-2xl h-14 shadow-2xl flex items-center justify-around px-1">
+      <nav className="md:hidden fixed bottom-5 left-4 right-4 z-40 bg-zinc-950/75 backdrop-blur-xl border border-white/[0.08] rounded-2xl h-15 shadow-2xl flex items-center justify-around px-2 select-none">
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -151,11 +154,11 @@ export default function App() {
               key={item.id}
               onClick={() => setActiveTab(item.id)}
               className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-all relative ${
-                isActive ? 'text-[#0078d4]' : 'text-[#a0a0a0] active:text-white'
+                isActive ? 'text-[#0a84ff]' : 'text-zinc-500 hover:text-white'
               }`}
             >
-              <item.icon className={`w-[18px] h-[18px] transition-transform ${isActive ? 'text-[#0078d4] drop-shadow-[0_0_8px_rgba(0,120,212,0.6)] scale-110' : 'text-[#a0a0a0]'}`} />
-              <span className="text-[9px] font-semibold mt-1 truncate max-w-full">
+              <item.icon className={`w-[19px] h-[19px] transition-transform ${isActive ? 'text-[#0a84ff] drop-shadow-[0_0_12px_rgba(10,132,255,0.7)] scale-110' : 'text-zinc-500'}`} />
+              <span className="text-[9px] font-extrabold mt-1 tracking-wide uppercase">
                 {item.label}
               </span>
             </button>

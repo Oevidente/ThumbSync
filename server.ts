@@ -22,7 +22,9 @@ const DEFAULT_GAME_LIST = process.platform === 'win32'
 let appConfig = {
   source: DEFAULT_SOURCE,
   dest: DEFAULT_DEST,
-  list: DEFAULT_GAME_LIST
+  list: DEFAULT_GAME_LIST,
+  simulateDates: true,
+  simulateDateMinutesOffset: 1
 };
 
 const PENDING_LIST_EXPORT_FILE = 'lista-de-pendentes.txt';
@@ -451,15 +453,39 @@ function copyPendingFile(file: any) {
   const destFolder = path.dirname(file.destPath);
   if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
 
-  fs.copyFileSync(file.sourcePath, file.destPath);
+  // Simulate creation/modification timestamps if enabled
+  const simulate = appConfig.simulateDates ?? true;
+  const offsetMinutes = appConfig.simulateDateMinutesOffset ?? 1;
 
-  const sourceStats = getFileStats(file.sourcePath);
-  if (!sourceStats) return;
+  if (simulate) {
+    // Exact moment of copy minus specified minutes offset (typically 1 minute)
+    const targetTime = new Date(Date.now() - offsetMinutes * 60 * 1000);
+    try {
+      if (fs.existsSync(file.sourcePath)) {
+        fs.utimesSync(file.sourcePath, targetTime, targetTime);
+      }
+    } catch (err) {
+      console.warn(`Could not set source timestamp for ${file.sourcePath}:`, err);
+    }
 
-  try {
-    fs.utimesSync(file.destPath, sourceStats.atime, sourceStats.mtime);
-  } catch (err) {
-    console.warn(`Copied ${file.destPath}, but could not preserve timestamps:`, err);
+    fs.copyFileSync(file.sourcePath, file.destPath);
+
+    try {
+      fs.utimesSync(file.destPath, targetTime, targetTime);
+    } catch (err) {
+      console.warn(`Copied ${file.destPath}, but could not set simulated timestamps:`, err);
+    }
+  } else {
+    fs.copyFileSync(file.sourcePath, file.destPath);
+
+    const sourceStats = getFileStats(file.sourcePath);
+    if (!sourceStats) return;
+
+    try {
+      fs.utimesSync(file.destPath, sourceStats.atime, sourceStats.mtime);
+    } catch (err) {
+      console.warn(`Copied ${file.destPath}, but could not preserve timestamps:`, err);
+    }
   }
 }
 
@@ -537,15 +563,29 @@ async function startServer() {
   });
 
   app.get("/api/config", (req, res) => {
-    res.json({ source: appConfig.source, dest: appConfig.dest, list: appConfig.list });
+    res.json({ 
+      source: appConfig.source, 
+      dest: appConfig.dest, 
+      list: appConfig.list,
+      simulateDates: appConfig.simulateDates ?? true,
+      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset ?? 1
+    });
   });
 
   app.post("/api/config", (req, res) => {
-    const { source, dest, list } = req.body;
+    const { source, dest, list, simulateDates, simulateDateMinutesOffset } = req.body;
     if (source) appConfig.source = source;
     if (dest) appConfig.dest = dest;
     if (list) appConfig.list = list;
-    res.json({ source: appConfig.source, dest: appConfig.dest, list: appConfig.list });
+    if (simulateDates !== undefined) appConfig.simulateDates = !!simulateDates;
+    if (simulateDateMinutesOffset !== undefined) appConfig.simulateDateMinutesOffset = Number(simulateDateMinutesOffset);
+    res.json({ 
+      source: appConfig.source, 
+      dest: appConfig.dest, 
+      list: appConfig.list,
+      simulateDates: appConfig.simulateDates,
+      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset
+    });
   });
 
   app.get("/api/analyze", (req, res) => {

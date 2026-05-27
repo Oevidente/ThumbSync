@@ -128,28 +128,28 @@ function DashboardProviderGroupItem({
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded bg-[#151515]/95 hover:bg-[#1a1a1a]/95 border border-white/10 px-2.5 py-1.5 font-sans text-[11px] ${toneClasses.header} backdrop-blur text-left cursor-pointer transition-colors`}
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] px-3.5 py-2.5 font-sans text-xs ${toneClasses.header} backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none`}
       >
-        <span className="font-semibold truncate flex items-center gap-1.5">
+        <span className="font-semibold truncate flex items-center gap-2">
           {isExpanded ? (
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
           ) : (
-            <ChevronRight className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+            <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
           )}
-          Provedor: {group.providerName}
+          Provedor: <span className="text-white font-bold">{group.providerName}</span>
         </span>
         <span
-          className={`shrink-0 rounded px-2 py-0.5 text-[10px] ${toneClasses.badge}`}
+          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${toneClasses.badge}`}
         >
           {group.games?.length || 0}
         </span>
       </button>
 
       {isExpanded && (
-        <div className="space-y-1 pl-1 border-l border-white/5 ml-2">
+        <div className="space-y-1.5 pl-2 border-l border-white/[0.05] ml-4.5">
           {group.games?.map((game: any, i: number) => {
             const normalizedName =
               game.normalized || normalizeGameName(game.displayName);
@@ -167,13 +167,13 @@ function DashboardProviderGroupItem({
             );
 
             const itemClasses = isSent
-              ? 'bg-green-500/10 border-green-500/20'
+              ? 'bg-[#30d158]/8 border-[#30d158]/15 text-[#30d158]'
               : toneClasses.item;
 
             return (
               <div
                 key={`${title}-${group.providerName}-${game.displayName}-${i}`}
-                className={`py-1.5 px-2 rounded border text-xs text-gray-300 font-sans truncate ${itemClasses}`}
+                className={`py-2 px-3 rounded-lg border text-xs font-semibold font-sans truncate shadow-sm transition-all duration-200 hover:translate-x-0.5 ${itemClasses}`}
               >
                 {game.displayName}
               </div>
@@ -202,36 +202,36 @@ function CompactProviderList({
 }) {
   const toneClasses = {
     blue: {
-      title: 'text-fluent-accent',
-      header: 'text-blue-200',
-      badge: 'bg-blue-500/15 text-blue-300',
-      item: 'bg-blue-500/10 border-blue-500/20',
+      title: 'text-[#0a84ff]',
+      header: 'text-zinc-250',
+      badge: 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/15',
+      item: 'bg-[#0a84ff]/5 border-[#0a84ff]/10 text-zinc-300 hover:text-white',
     },
     green: {
-      title: 'text-green-400',
-      header: 'text-green-200',
-      badge: 'bg-green-500/15 text-green-300',
-      item: 'bg-green-500/10 border-green-500/20',
+      title: 'text-[#30d158]',
+      header: 'text-zinc-250',
+      badge: 'bg-[#30d158]/10 text-[#30d158] border border-[#30d158]/15',
+      item: 'bg-[#30d158]/5 border-[#30d158]/10 text-[#30d158] hover:text-white',
     },
     orange: {
-      title: 'text-orange-400',
-      header: 'text-orange-200',
-      badge: 'bg-orange-500/15 text-orange-300',
-      item: 'bg-orange-500/10 border-orange-500/20',
+      title: 'text-[#ff9f0a]',
+      header: 'text-zinc-250',
+      badge: 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/15',
+      item: 'bg-[#ff9f0a]/5 border-[#ff9f0a]/10 text-zinc-300 hover:text-white',
     },
   }[tone];
 
   return (
-    <div className="min-h-0 flex flex-col rounded-xl bg-white/[0.02] border border-white/5 p-4">
-      <div className="flex items-center justify-between gap-3 mb-3">
+    <div className="min-h-0 flex flex-col rounded-2xl bg-white/[0.015] border border-white/[0.05] p-5">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <h4
-          className={`font-bold flex items-center gap-2 ${toneClasses.title}`}
+          className={`font-bold text-sm tracking-tight flex items-center gap-2 ${toneClasses.title}`}
         >
           <Icon className="w-4 h-4" />
-          {title} ({count})
+          {title} <span className="text-zinc-500 font-medium">({count})</span>
         </h4>
       </div>
-      <div className="max-h-[280px] overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+      <div className="max-h-[300px] overflow-y-auto space-y-3.5 pr-2 custom-scrollbar">
         {groups.map((group: any, groupIndex: number) => (
           <DashboardProviderGroupItem
             key={`${title}-${group.providerName}-${groupIndex}`}
@@ -243,8 +243,8 @@ function CompactProviderList({
           />
         ))}
         {count === 0 && (
-          <p className="text-center py-12 text-gray-600 text-xs italic">
-            Nenhum item.
+          <p className="text-center py-16 text-zinc-600 text-xs italic font-medium">
+            Nenhum item pendente.
           </p>
         )}
       </div>
@@ -263,7 +263,10 @@ export function Dashboard({
 }) {
   if (!analysisData)
     return (
-      <div className="p-10 text-center opacity-50">Carregando dados...</div>
+      <div className="p-16 text-center text-zinc-400 font-semibold flex items-center justify-center gap-3 animate-pulse">
+        <RefreshCw className="w-5 h-5 animate-spin" />
+        Carregando console de controle...
+      </div>
     );
 
   const sentData = useMemo(() => {
@@ -321,36 +324,36 @@ export function Dashboard({
       label: 'Origem',
       value: analysisData.totalSourceFiles,
       icon: Package,
-      color: 'text-blue-400',
-      glow: 'bg-blue-500/20',
+      color: 'text-[#0a84ff]',
+      glow: 'from-[#0a84ff]/20 to-transparent',
     },
     {
       label: 'Pendentes',
       value: analysisData.pendingFiles.length,
       icon: AlertCircle,
-      color: 'text-orange-400',
-      glow: 'bg-orange-500/20',
+      color: 'text-[#ff9f0a]',
+      glow: 'from-[#ff9f0a]/20 to-transparent',
     },
     {
       label: 'Jogos Feitos',
       value: completedGames,
       icon: FileCheck,
-      color: 'text-fluent-accent',
-      glow: 'bg-blue-500/20',
+      color: 'text-[#0a84ff]',
+      glow: 'from-[#0a84ff]/20 to-transparent',
     },
     {
       label: 'Enviados',
       value: sentGames,
       icon: UploadCloud,
-      color: 'text-green-400',
-      glow: 'bg-green-500/20',
+      color: 'text-[#30d158]',
+      glow: 'from-[#30d158]/20 to-transparent',
     },
     {
       label: 'Lista Total',
       value: totalListedGames,
       icon: Clock,
       color: 'text-purple-400',
-      glow: 'bg-purple-500/20',
+      glow: 'from-purple-500/20 to-transparent',
     },
   ];
   const readyGroups = getProviderGroups(
@@ -365,20 +368,20 @@ export function Dashboard({
   );
 
   return (
-    <div className="space-y-10 relative">
-      <div className="flex justify-between items-end relative z-10">
+    <div className="space-y-8 relative">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-5 relative z-10">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-zinc-450 bg-clip-text text-transparent">
             Centro de Controle
           </h1>
-          <p className="text-gray-400 font-medium">
-            ThumbSync • Sincronização & Gestão de Thumbs
+          <p className="text-zinc-400 text-xs md:text-sm font-semibold tracking-wide">
+            Sincronização estendida de miniaturas de jogos
           </p>
         </div>
         <button
           onClick={onRefresh}
           disabled={isLoading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full acrylic hover:bg-white/10 transition-all text-sm font-semibold active:scale-95 disabled:opacity-70 disabled:cursor-wait"
+          className="glass-btn-secondary !py-2.5 !px-5 flex items-center gap-2 cursor-pointer text-sm"
         >
           <motion.span
             className="inline-flex"
@@ -395,76 +398,81 @@ export function Dashboard({
         </button>
       </div>
 
-      <div className="grid grid-cols-5 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-4 md:gap-6">
+      <div className="grid grid-cols-5 gap-1.5 sm:gap-4">
         {stats.map((stat) => (
           <Fragment key={stat.label}>
-            <GlassCard hover className="flex flex-col sm:flex-row items-center sm:items-start justify-center sm:justify-start text-center sm:text-left gap-1 sm:gap-5 !p-1.5 sm:!p-5 relative min-w-0 aspect-square sm:aspect-auto">
-              <div
-                className={`absolute -inset-1 ${stat.glow} rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`}
-              />
-              <div
-                className={`p-1 sm:p-3 rounded sm:rounded-xl bg-white/5 ${stat.color} relative z-10 shrink-0`}
-              >
-                <stat.icon className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
-              </div>
-              <div className="relative z-10 min-w-0 flex flex-col items-center sm:items-start w-full">
-                <p className="text-[7px] sm:text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-0.5 sm:mb-1 truncate max-w-full">
-                  {stat.label}
-                </p>
-                <p className="text-xs sm:text-2xl font-bold tracking-tight truncate max-w-full">
-                  {stat.value}
-                </p>
+            <GlassCard hover className="!p-1.5 sm:!p-4 h-[72px] sm:h-auto !rounded-xl sm:!rounded-2xl">
+              <div className="flex flex-col items-center justify-between h-full relative z-10">
+                <div
+                  className={`absolute -inset-4 bg-gradient-to-br ${stat.glow} opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none`}
+                />
+                <div
+                  className={`w-[30px] h-[30px] min-h-[30px] min-w-[30px] sm:w-12 sm:h-12 sm:min-h-[48px] sm:min-w-[48px] shrink-0 flex items-center justify-center rounded-[8px] sm:rounded-xl bg-white/[0.05] ${stat.color} transition-transform duration-300 group-hover:scale-105`}
+                >
+                  <stat.icon strokeWidth={2.5} className="w-[16px] h-[16px] sm:w-6 sm:h-6 shrink-0 relative z-10" />
+                </div>
+                <div className="flex flex-col items-center justify-end w-full text-center mt-auto relative z-10">
+                  <p className="text-[7px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mb-[3px] sm:mb-1 truncate w-full font-sans">
+                    {stat.label}
+                  </p>
+                  <p className="text-[12px] sm:text-2xl font-black tracking-tight text-white truncate w-full font-sans leading-none sm:leading-normal">
+                    {stat.value}
+                  </p>
+                </div>
               </div>
             </GlassCard>
           </Fragment>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <GlassCard className="lg:col-span-2 !p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-fluent-accent" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <GlassCard className="lg:col-span-2 !p-6 sm:!p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-[#0a84ff] shadow-[0_0_8px_#0a84ff]" />
               Próximo Lote Inteligente
             </h3>
-            <span className="px-3 py-1 bg-fluent-accent/10 border border-fluent-accent/20 rounded-full text-[10px] font-black text-fluent-accent uppercase tracking-tighter">
+            <span className="px-3 py-1 bg-[#0a84ff]/10 border border-[#0a84ff]/20 rounded-full text-[9px] font-bold text-[#0a84ff] uppercase tracking-wide">
               Auto-Schedule Ativo
             </span>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
             {analysisData.pendingFiles.length === 0 ? (
               <div className="py-20 text-center space-y-4">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto opacity-20" />
-                <p className="text-gray-500 italic font-medium">
-                  Todos os arquivos estão sincronizados.
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <CheckCircle className="w-6 h-6 text-[#30d158]" />
+                </div>
+                <p className="text-zinc-500 font-semibold text-sm">
+                  Acervo impecável. Todos os arquivos estão sincronizados!
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/5">
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="p-5 rounded-2xl bg-white/[0.015] border border-white/[0.05]">
+                  <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-4">
                     Galeria de Prioridades
                   </p>
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-4 gap-3.5">
                     {analysisData.pendingFiles
                       .slice(0, 4)
                       .map((f: any, i: number) => (
                         <div
                           key={i}
-                          className="relative aspect-[2/3] rounded-lg overflow-hidden group border border-white/10 shadow-[0_0_15px_rgba(0,0,0,0.5)]"
+                          className="relative aspect-[2/3] rounded-lg overflow-hidden group border border-white/[0.08] shadow-[0_4px_16px_rgba(0,0,0,0.5)] bg-zinc-900"
                         >
                           <img
                             src={`/api/image?path=${encodeURIComponent(f.sourcePath)}`}
                             alt={f.relativePath.split('/').pop()}
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.currentTarget as HTMLImageElement).src =
-                                'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIwaHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZmlsbD0iIzY2NiI+V0VCUDwvdGV4dD48L3N2Zz4=';
+                                'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIwaHB4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSIgZmlsbD0iJobsIis+V0VCUDwvdGV4dD48L3N2Zz4=';
                             }}
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
-                            <span className="text-[10px] truncate w-full font-medium text-white drop-shadow-md">
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                            <span className="text-[8px] font-semibold text-white truncate w-full leading-tight text-center">
                               {f.relativePath
                                 .split(/[\/\\]/)
                                 .pop()
@@ -475,13 +483,13 @@ export function Dashboard({
                       ))}
                   </div>
                 </div>
-                <div className="p-6 rounded-2xl bg-fluent-accent/5 border border-fluent-accent/10 flex flex-col justify-center items-center text-center">
-                  <Clock className="w-10 h-10 text-fluent-accent mb-3 opacity-50" />
-                  <p className="text-sm font-bold text-white mb-1">
+                <div className="p-6 rounded-2xl bg-[#0a84ff]/5 border border-[#0a84ff]/10 flex flex-col justify-center items-center text-center">
+                  <Clock className="w-10 h-10 text-[#0a84ff] mb-3.5 opacity-70" />
+                  <p className="text-sm font-bold text-white mb-1.5 font-sans">
                     Lote 01 Programado
                   </p>
-                  <p className="text-xs text-gray-500 max-w-[140px]">
-                    Distribuição de 17 arquivos entre 14:10 e 17:30
+                  <p className="text-xs text-zinc-400 max-w-[170px] leading-relaxed">
+                    Distribuição equilibrada entre <span className="font-bold text-white">14:10</span> e <span className="font-bold text-white">17:30</span>
                   </p>
                 </div>
               </div>
@@ -489,9 +497,9 @@ export function Dashboard({
           </div>
         </GlassCard>
 
-        <GlassCard className="!p-8 overflow-hidden relative">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-fluent-accent/10 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
-          <h3 className="text-xl font-bold mb-8">Saúde do Acervo</h3>
+        <GlassCard className="!p-6 sm:!p-8 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-36 h-36 bg-[#0a84ff]/5 blur-[40px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <h3 className="text-lg md:text-xl font-bold mb-6">Saúde do Acervo</h3>
           <div className="relative h-48 flex items-center justify-center">
             <svg
               className="w-48 h-48 transform -rotate-90 overflow-visible"
@@ -503,22 +511,20 @@ export function Dashboard({
                 cy="96"
                 r="84"
                 fill="transparent"
-                stroke="currentColor"
-                strokeWidth="12"
-                className="text-white/5"
+                stroke="rgba(255, 255, 255, 0.03)"
+                strokeWidth="10"
               />
               <motion.circle
                 cx="96"
                 cy="96"
                 r="84"
                 fill="transparent"
-                stroke="currentColor"
-                strokeWidth="12"
+                stroke="#0a84ff"
+                strokeWidth="10"
                 strokeDasharray={527}
                 initial={{ strokeDashoffset: 527 }}
                 animate={{ strokeDashoffset: completedDashOffset }}
                 transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
-                className="text-fluent-accent"
                 strokeLinecap="round"
               />
               <motion.circle
@@ -526,8 +532,8 @@ export function Dashboard({
                 cy="96"
                 r="84"
                 fill="transparent"
-                stroke="currentColor"
-                strokeWidth="12"
+                stroke="#30d158"
+                strokeWidth="11"
                 strokeDasharray={527}
                 initial={{ strokeDashoffset: 527 }}
                 animate={{ strokeDashoffset: sentDashOffset }}
@@ -536,44 +542,45 @@ export function Dashboard({
                   delay: 0.15,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className="text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.45)]"
+                className="drop-shadow-[0_0_12px_rgba(48,209,88,0.4)]"
                 strokeLinecap="round"
               />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-black text-green-300">
+            <div className="absolute inset-0 flex flex-col items-center justify-center select-none">
+              <span className="text-4xl font-extrabold text-[#30d158] tracking-tight">
                 {sentPercent}%
               </span>
-              <span className="text-[10px] text-green-400 font-bold uppercase tracking-widest mt-1">
+              <span className="text-[9px] text-[#30d158] font-bold uppercase tracking-widest mt-1">
                 Enviados
               </span>
-              <span className="text-[11px] text-fluent-accent font-semibold mt-1">
-                {completedPercent}% feitos
+              <span className="text-[11px] text-[#0a84ff] font-bold mt-1">
+                {completedPercent}% prontos
               </span>
             </div>
           </div>
-          <div className="mt-10 grid grid-cols-3 gap-4">
+          <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/[0.05] pt-5">
             <div className="space-y-1 min-w-0">
-              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                <span className="w-2 h-2 rounded-full bg-fluent-accent" />
+              <span className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0a84ff]" />
                 Feitos
               </span>
-              <span className="text-lg font-bold text-white">
+              <span className="text-base sm:text-lg font-bold text-white">
                 {completedGames}
               </span>
             </div>
             <div className="space-y-1 min-w-0">
-              <span className="flex items-center gap-2 text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-                <span className="w-2 h-2 rounded-full bg-green-400" />
+              <span className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#30d158]" />
                 Enviados
               </span>
-              <span className="text-lg font-bold text-white">{sentGames}</span>
+              <span className="text-base sm:text-lg font-bold text-white">{sentGames}</span>
             </div>
             <div className="space-y-1 min-w-0">
-              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block">
+              <span className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 rounded-full bg-zinc-650" />
                 Faltam
               </span>
-              <span className="text-lg font-bold text-white">
+              <span className="text-base sm:text-lg font-bold text-white">
                 {remainingGames}
               </span>
             </div>
@@ -581,19 +588,19 @@ export function Dashboard({
         </GlassCard>
       </div>
 
-      <GlassCard className="!p-6">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <h3 className="text-xl font-bold flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-fluent-accent" />
+      <GlassCard className="!p-6 sm:!p-8">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h3 className="text-lg md:text-xl font-bold flex items-center gap-2.5">
+            <div className="w-2 h-2 rounded-full bg-[#0a84ff] shadow-[0_0_8px_#0a84ff]" />
             Preview da lista
           </h3>
-          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
-            {analysisData.gameListData?.totalListedGames || 0} jogos
+          <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+            {analysisData.gameListData?.totalListedGames || 0} jogos catalogados
           </span>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <CompactProviderList
-            title="Feitos"
+            title="Sincronizados"
             count={completedGames}
             groups={readyGroups}
             tone="blue"
@@ -601,7 +608,7 @@ export function Dashboard({
             sentData={sentData}
           />
           <CompactProviderList
-            title="Faltando"
+            title="Pendentes no Disco"
             count={remainingGames}
             groups={remainingGroups}
             tone="orange"

@@ -17,44 +17,44 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   ];
 
   return (
-    <div className="hidden md:flex w-[260px] h-screen bg-[#191919]/95 backdrop-blur-[20px] border-r border-white/5 flex flex-col p-5 fixed left-0 top-0 z-50">
-      <div className="flex items-center gap-3 px-1 mb-10 mt-2">
-        <div className="w-6 h-6 rounded bg-fluent-accent flex items-center justify-center shadow-[0_0_15px_rgba(0,120,212,0.4)]">
-          <Database className="w-3.5 h-3.5 text-white" />
+    <div className="hidden md:flex w-[260px] h-screen bg-[#0d0d10]/60 backdrop-blur-3xl border-r border-white/[0.06] flex flex-col p-6 fixed left-0 top-0 z-50">
+      <div className="flex items-center gap-3 px-1 mb-10 mt-2 select-none">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0a84ff] to-[#0055b3] flex items-center justify-center shadow-[0_4px_12px_rgba(10,132,255,0.3)]">
+          <Database className="w-4 h-4 text-white" />
         </div>
-        <span className="font-bold text-[18px] tracking-tight text-white drop-shadow-md">ThumbSync</span>
+        <span className="font-extrabold text-[19px] tracking-tight text-white bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">ThumbSync</span>
       </div>
 
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-1.5">
         {menuItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all relative group overflow-hidden ${
-                isActive ? "text-white bg-white/[0.04]" : "text-[#d1d1d1] hover:bg-white/[0.08] hover:text-white"
+              className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative group overflow-hidden ${
+                isActive ? "text-white bg-white/[0.06] shadow-sm animate-fade-in" : "text-zinc-400 hover:bg-white/[0.03] hover:text-white"
               }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active-indicator"
-                  className="absolute left-0 top-[15%] bottom-[15%] w-[3px] bg-fluent-accent rounded-r-md shadow-[0_0_8px_#0078d4]"
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="absolute left-0 top-[25%] bottom-[25%] w-[3px] bg-[#0a84ff] rounded-r-md shadow-[0_0_8px_#0a84ff]"
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
                 />
               )}
-              {/* Liquid hover effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              {/* Highlight flash layout */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.015] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               
-              <item.icon className={`w-[18px] h-[18px] relative z-10 ${isActive ? "text-fluent-accent drop-shadow-[0_0_8px_rgba(0,120,212,0.6)]" : "group-hover:text-fluent-accent transition-colors"}`} />
-              <span className="text-[14px] font-medium relative z-10">{item.label}</span>
+              <item.icon className={`w-[18px] h-[18px] relative z-10 transition-transform duration-300 group-hover:scale-105 ${isActive ? "text-[#0a84ff] drop-shadow-[0_0_8px_rgba(10,132,255,0.4)]" : "text-zinc-400 group-hover:text-[#0a84ff] transition-colors"}`} />
+              <span className="text-[13.5px] font-semibold relative z-10">{item.label}</span>
             </button>
           );
         })}
       </nav>
       
-      <div className="mt-auto px-2 py-4 text-[11px] uppercase tracking-wider text-[#a0a0a0] font-bold flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+      <div className="mt-auto px-2 py-4 text-[10px] uppercase tracking-widest text-[#8a8a93] font-bold flex items-center gap-2">
+        <div className="w-1.5 h-1.5 rounded-full bg-[#30d158] shadow-[0_0_8px_rgba(48,209,88,0.8)]" />
         v1.0.5 Stable
       </div>
     </div>
