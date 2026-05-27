@@ -1013,6 +1013,17 @@ async function startServer() {
     }
   });
 
+  // Interceptadores de cabecalhos MIME para PWA instalável
+  app.get('/manifest.webmanifest', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+    next();
+  });
+
+  app.get('/sw.js', (req, res, next) => {
+    res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    next();
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
