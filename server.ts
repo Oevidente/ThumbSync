@@ -829,7 +829,9 @@ async function startServer() {
       copiedLog: [],
       startTime: new Date(),
       nextCopyAt: 0,
-      currentFileWaiting: null
+      currentFileWaiting: null,
+      watchBatchEnabled: !!settings.watchBatchEnabled,
+      watchBatchLimit: Number(settings.watchBatchLimit) || 0
     };
 
     // Run dynamic time-splitting watch mode as an active loop
@@ -856,7 +858,11 @@ async function startServer() {
 
           // Scan directories
           const data = collectComparisonData(source, dest);
-          const pendingFiles = buildCopyQueue(data.pendingFiles, settings);
+          let pendingFiles = buildCopyQueue(data.pendingFiles, settings);
+
+          if (settings.watchBatchEnabled && typeof settings.watchBatchLimit === 'number' && settings.watchBatchLimit > 0) {
+            pendingFiles = pendingFiles.slice(0, settings.watchBatchLimit);
+          }
 
           if (pendingFiles.length === 0) {
             currentCopyState.currentFileWaiting = null;

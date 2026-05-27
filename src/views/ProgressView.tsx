@@ -46,6 +46,13 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   const [startMinute, setStartMinute] = useState(0);
   const [endHour, setEndHour] = useState(17);
   const [endMinute, setEndMinute] = useState(30);
+  const [watchBatchEnabled, setWatchBatchEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('watchBatchEnabled') === 'true';
+  });
+  const [watchBatchLimit, setWatchBatchLimit] = useState<number>(() => {
+    const saved = localStorage.getItem('watchBatchLimit');
+    return saved ? parseInt(saved, 10) || 12 : 12;
+  });
 
   const orderedPendingFiles = useMemo(() => {
     return [...pendingFiles].sort((a, b) => {
@@ -142,6 +149,8 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
             startMinute,
             endHour,
             endMinute,
+            watchBatchEnabled,
+            watchBatchLimit,
           },
         }),
       });
@@ -291,7 +300,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                 </motion.div>
               )}
               {selectedMode === 'watch' && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 space-y-4">
                   <p className="text-xs text-zinc-305 leading-relaxed">
                     A pasta de origem será monitorada continuamente. Novos
                     arquivos serão adicionados à fila e a divisão de tempo será
@@ -301,6 +310,52 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                     <Activity className="w-3.5 h-3.5 animate-pulse" />
                     Sincronização standby com cálculo de divisão de tempo.
                   </p>
+
+                  <div className="pt-4 mt-4 border-t border-purple-500/10 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col gap-0.5">
+                        <label className="text-xs font-bold text-zinc-300">Modo Lote (Limite)</label>
+                        <p className="text-[10px] text-zinc-500 max-w-sm leading-normal">Habilitar limite máximo de arquivos na fila de Standby.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = !watchBatchEnabled;
+                          setWatchBatchEnabled(val);
+                          localStorage.setItem('watchBatchEnabled', val ? 'true' : 'false');
+                        }}
+                        id="btn-toggle-watch-batch"
+                        disabled={isRunning}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${watchBatchEnabled ? 'bg-purple-600' : 'bg-white/10'} disabled:opacity-50`}
+                      >
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${watchBatchEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+
+                    {watchBatchEnabled && (
+                      <div className="space-y-2 pt-2 border-t border-purple-500/10 animate-fade-in text-left">
+                        <label className="block text-xs font-semibold text-zinc-400">
+                          Quantidade de arquivos limite no lote
+                        </label>
+                        <input
+                          type="number"
+                          disabled={isRunning}
+                          value={watchBatchLimit}
+                          min="1"
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            const newVal = Number.isNaN(val) ? 1 : Math.max(1, val);
+                            setWatchBatchLimit(newVal);
+                            localStorage.setItem('watchBatchLimit', newVal.toString());
+                          }}
+                          className="w-full glass-input"
+                        />
+                        <p className="text-[10px] text-zinc-500 font-semibold italic leading-normal">
+                          Se um novo arquivo aparecer e a fila tiver {watchBatchLimit} itens, o mais antigo será empurrado para fora do lote.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </motion.div>
               )}
 
@@ -445,12 +500,14 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                   <div className="w-9 h-9 rounded-full bg-purple-500/20 flex flex-col items-center justify-center relative">
                     <Activity className="w-4 h-4 text-purple-400 animate-pulse" />
                   </div>
-                  <div>
+                  <div className="flex-1 text-left">
                     <h4 className="text-white font-bold tracking-tight text-xs">
-                      Standby Ativo
+                      Standby Ativo {status.watchBatchEnabled ? `(Lote de ${status.watchBatchLimit})` : ''}
                     </h4>
-                    <p className="text-[11px] text-purple-300">
-                      Procurando por novos arquivos na de origem...
+                    <p className="text-[11px] text-purple-200">
+                      {status.watchBatchEnabled 
+                        ? `Monitorando. Mantendo o lote limitado a um máximo de ${status.watchBatchLimit} arquivos.`
+                        : 'Procurando por novos arquivos na de origem...'}
                     </p>
                   </div>
                 </div>
