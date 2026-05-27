@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings, Database } from 'lucide-react';
+import { Home, Search, Play, FileText, Archive, Settings } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
@@ -120,9 +120,11 @@ export default function App() {
       {/* Mobile Sticky Header */}
       <header className="md:hidden sticky top-0 z-40 bg-[#070709]/85 backdrop-blur-xl border-b border-white/[0.05] px-5 py-4 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] select-none">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-lg bg-[#0a84ff] flex items-center justify-center shadow-[0_0_15px_rgba(10,132,255,0.45)]">
-            <Database className="w-3.5 h-3.5 text-white" />
-          </div>
+          <img 
+            src="/logodosite.jpg" 
+            alt="ThumbSync Logo" 
+            className="w-6 h-6 rounded-lg shadow-[0_0_15px_rgba(10,132,255,0.45)] object-cover"
+          />
           <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
         <div className="text-[10px] font-black text-[#0a84ff] uppercase bg-[#0a84ff]/10 border border-[#0a84ff]/15 px-2.5 py-1 rounded-full tracking-wider font-sans">

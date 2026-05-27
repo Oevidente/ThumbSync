@@ -1,4 +1,4 @@
-import { Home, Search, Play, Settings, FileText, Database, Archive } from "lucide-react";
+import { Home, Search, Play, Settings, FileText, Archive } from "lucide-react";
 import { motion } from "motion/react";
 
 interface SidebarProps {
@@ -19,9 +19,11 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
   return (
     <div className="hidden md:flex w-[260px] h-screen bg-[#0d0d10]/60 backdrop-blur-3xl border-r border-white/[0.06] flex flex-col p-6 fixed left-0 top-0 z-50">
       <div className="flex items-center gap-3 px-1 mb-10 mt-2 select-none">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0a84ff] to-[#0055b3] flex items-center justify-center shadow-[0_4px_12px_rgba(10,132,255,0.3)]">
-          <Database className="w-4 h-4 text-white" />
-        </div>
+        <img 
+          src="/logodosite.jpg" 
+          alt="ThumbSync Logo" 
+          className="w-[34px] h-[34px] rounded-[10px] shadow-[0_0_15px_rgba(10,132,255,0.4)] object-cover"
+        />
         <span className="font-extrabold text-[19px] tracking-tight text-white bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">ThumbSync</span>
       </div>
 
@@ -55,7 +57,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       
       <div className="mt-auto px-2 py-4 text-[10px] uppercase tracking-widest text-[#8a8a93] font-bold flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-[#30d158] shadow-[0_0_8px_rgba(48,209,88,0.8)]" />
-        v1.0.5 Stable
+        v2.0.0 alpha
       </div>
     </div>
   );

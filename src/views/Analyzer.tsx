@@ -91,20 +91,18 @@ export function Analyzer({ analysisData, runAnalysis, isLoading }: { analysisDat
               Nenhum arquivo correspondente aos filtros atuais.
             </p>
           ) : (
-            <table className="w-full text-left text-sm border-collapse">
-              <thead className="bg-[#121215]/80 text-zinc-400 uppercase text-[9px] tracking-widest sticky top-0 backdrop-blur-md border-b border-white/[0.05] select-none">
-                <tr>
-                  <th className="px-6 py-4 font-black">Visualização</th>
-                  <th className="px-6 py-4 font-black">Especificação do Jogo</th>
-                  <th className="px-6 py-4 font-black">Status de Sincronia</th>
-                  <th className="px-6 py-4 font-black text-right">Direção</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
+            <div className="w-full text-left text-sm flex flex-col">
+              <div className="hidden sm:grid sm:grid-cols-[100px_1fr_200px_80px] bg-[#121215]/80 text-zinc-400 uppercase text-[9px] tracking-widest sticky top-0 backdrop-blur-md border-b border-white/[0.05] select-none z-20 px-6">
+                <div className="py-4 font-black">Visualização</div>
+                <div className="py-4 font-black">Especificação do Jogo</div>
+                <div className="py-4 font-black">Status de Sincronia</div>
+                <div className="py-4 font-black text-right pl-6">Direção</div>
+              </div>
+              <div className="flex flex-col divide-y divide-white/[0.04]">
                 {filteredFiles.map((file: any, i: number) => (
-                  <tr key={i} className="hover:bg-white/[0.025] transition-all duration-150 group relative overflow-hidden">
-                    <td className="px-6 py-3 relative z-10 w-28">
-                       <div className="w-12 aspect-[2/3] rounded-lg overflow-hidden border border-white/[0.08] shadow-[0_4px_12px_rgba(0,0,0,0.5)] bg-zinc-900 flex-shrink-0">
+                  <div key={i} className="hover:bg-white/[0.025] transition-all duration-150 group relative overflow-hidden flex flex-row items-center p-4 sm:px-6 sm:py-3 gap-3 sm:gap-0 sm:grid sm:grid-cols-[100px_1fr_200px_80px]">
+                    <div className="relative z-10 shrink-0">
+                       <div className="w-12 aspect-[2/3] rounded-lg overflow-hidden border border-white/[0.08] shadow-sm bg-zinc-900 flex-shrink-0">
                          <img 
                            src={`/api/image?path=${encodeURIComponent(file.sourcePath)}`} 
                            alt="Thumb" 
@@ -115,14 +113,25 @@ export function Analyzer({ analysisData, runAnalysis, isLoading }: { analysisDat
                            }}
                          />
                        </div>
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-[#f4f4f5] text-[14px] leading-snug">{file.relativePath.split(/[\/\\]/).pop().replace('.webp', '')}</span>
-                        <span className="text-[11px] text-zinc-500 font-semibold mt-0.5">{file.relativePath.split(/[\/\\]/).slice(0, -1).join(' • ') || 'Provedor Geral'}</span>
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1 sm:pr-4 justify-center">
+                      <span className="font-extrabold text-[#f4f4f5] text-[13px] sm:text-[14px] leading-snug w-full truncate">{file.relativePath.split(/[\/\\]/).pop().replace('.webp', '')}</span>
+                      <span className="text-[10px] sm:text-[11px] text-zinc-500 font-semibold mt-0.5 w-full truncate">{file.relativePath.split(/[\/\\]/).slice(0, -1).join(' • ') || 'Provedor Geral'}</span>
+                      <div className="sm:hidden mt-1.5">
+                        {file.syncStatus.reason === 'missing-dest' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#0a84ff]/10 border border-[#0a84ff]/15 rounded-full text-[9px] font-bold text-[#0a84ff]">
+                            <span className="w-1 h-1 rounded-full bg-[#0a84ff]" />
+                            Novo Arquivo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#ff9f0a]/10 border border-[#ff9f0a]/15 rounded-full text-[9px] font-bold text-[#ff9f0a]">
+                            <span className="w-1 h-1 rounded-full bg-[#ff9f0a]" />
+                            Modificação/Substituição
+                          </span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-6 py-3">
+                    </div>
+                    <div className="hidden sm:flex items-center">
                       {file.syncStatus.reason === 'missing-dest' ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-[#0a84ff]/10 border border-[#0a84ff]/15 rounded-full text-[10px] font-bold text-[#0a84ff]">
                           <span className="w-1 h-1 rounded-full bg-[#0a84ff]" />
@@ -134,16 +143,16 @@ export function Analyzer({ analysisData, runAnalysis, isLoading }: { analysisDat
                           Modificação/Substituição
                         </span>
                       )}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                       <button className="p-2.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.08] hover:text-[#0a84ff] hover:border-white/10 border border-transparent transition-all duration-200">
-                         <ArrowRight className="w-4 h-4 text-zinc-500 group-hover:translate-x-1 group-hover:text-white transition-all shrink-0" />
+                    </div>
+                    <div className="flex justify-end sm:justify-end items-center sm:pl-4 shrink-0 h-full">
+                       <button className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/[0.05] sm:bg-white/[0.02] hover:bg-white/[0.08] hover:text-[#0a84ff] hover:border-white/10 border border-transparent transition-all duration-200">
+                         <ArrowRight className="w-4 h-4 text-zinc-400 sm:text-zinc-500 group-hover:translate-x-0.5 group-hover:text-white transition-all shrink-0" />
                        </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </div>
           )}
         </div>
       </GlassCard>
