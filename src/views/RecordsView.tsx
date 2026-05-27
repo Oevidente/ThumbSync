@@ -1438,32 +1438,43 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 select-none">
-        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
-          <div className="p-1.5 sm:p-2.5 rounded-xl bg-[#0a84ff]/10 text-[#0a84ff] shrink-0">
-            <Database className="w-4.5 h-4.5 sm:w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex flex-col w-full text-left">
-            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Provedores</p>
-            <p className="text-sm sm:text-lg md:text-xl font-black text-white truncate max-w-full font-sans">{providers.length}</p>
-          </div>
-        </GlassCard>
-        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
-          <div className="p-1.5 sm:p-2.5 rounded-xl bg-[#30d158]/10 text-[#30d158] shrink-0">
-            <Package className="w-4.5 h-4.5 sm:w-5 h-5" />
-          </div>
-          <div className="min-w-0 flex flex-col w-full text-left">
-            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Jogos no destino</p>
-            <p className="text-sm sm:text-lg md:text-xl font-black text-white truncate max-w-full font-sans">{totalGames}</p>
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-4 select-none">
+        <GlassCard className="!p-1.5 sm:!p-4 h-[72px] sm:h-auto !rounded-xl sm:!rounded-2xl group">
+          <div className="flex flex-col items-center justify-between h-full relative z-10">
+            <div className="absolute -inset-4 bg-gradient-to-br from-[#0a84ff]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div className="w-[30px] h-[30px] min-h-[30px] min-w-[30px] sm:w-12 sm:h-12 sm:min-h-[48px] sm:min-w-[48px] shrink-0 flex items-center justify-center rounded-[8px] sm:rounded-xl bg-white/[0.05] text-[#0a84ff] transition-transform duration-300 group-hover:scale-105">
+              <Database strokeWidth={2.5} className="w-[16px] h-[16px] sm:w-6 sm:h-6 shrink-0 relative z-10" />
+            </div>
+            <div className="flex flex-col items-center justify-end w-full text-center mt-auto relative z-10">
+              <p className="text-[7px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mb-[3px] sm:mb-1 truncate w-full font-sans">Provedores</p>
+              <p className="text-[12px] sm:text-2xl font-black tracking-tight text-white truncate w-full font-sans leading-none sm:leading-normal">{providers.length}</p>
+            </div>
           </div>
         </GlassCard>
-        <GlassCard className="!p-3 sm:!p-3.5 flex items-center gap-3 min-w-0 overflow-hidden">
-          <div className="p-1.5 sm:p-2.5 rounded-xl bg-white/[0.03] text-zinc-350 shrink-0 border border-white/[0.05]">
-            <Clock className="w-4.5 h-4.5 sm:w-5 h-5" />
+        
+        <GlassCard className="!p-1.5 sm:!p-4 h-[72px] sm:h-auto !rounded-xl sm:!rounded-2xl group">
+          <div className="flex flex-col items-center justify-between h-full relative z-10">
+            <div className="absolute -inset-4 bg-gradient-to-br from-[#30d158]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div className="w-[30px] h-[30px] min-h-[30px] min-w-[30px] sm:w-12 sm:h-12 sm:min-h-[48px] sm:min-w-[48px] shrink-0 flex items-center justify-center rounded-[8px] sm:rounded-xl bg-white/[0.05] text-[#30d158] transition-transform duration-300 group-hover:scale-105">
+              <Package strokeWidth={2.5} className="w-[16px] h-[16px] sm:w-6 sm:h-6 shrink-0 relative z-10" />
+            </div>
+            <div className="flex flex-col items-center justify-end w-full text-center mt-auto relative z-10">
+              <p className="text-[7px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mb-[3px] sm:mb-1 truncate w-full font-sans">Jogos no destino</p>
+              <p className="text-[12px] sm:text-2xl font-black tracking-tight text-white truncate w-full font-sans leading-none sm:leading-normal">{totalGames}</p>
+            </div>
           </div>
-          <div className="min-w-0 flex flex-col w-full text-left">
-            <p className="text-[9px] sm:text-[10px] text-[#8a8a93] font-bold uppercase tracking-widest mb-0.5 truncate max-w-full font-sans">Última alteração</p>
-            <p className="text-[11px] sm:text-sm font-black text-white truncate max-w-full leading-normal font-sans">{formatDate(latestUpdateMs)}</p>
+        </GlassCard>
+
+        <GlassCard className="!p-1.5 sm:!p-4 h-[72px] sm:h-auto !rounded-xl sm:!rounded-2xl group">
+          <div className="flex flex-col items-center justify-between h-full relative z-10">
+            <div className="absolute -inset-4 bg-gradient-to-br from-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div className="w-[30px] h-[30px] min-h-[30px] min-w-[30px] sm:w-12 sm:h-12 sm:min-h-[48px] sm:min-w-[48px] shrink-0 flex items-center justify-center rounded-[8px] sm:rounded-xl bg-white/[0.05] text-purple-400 transition-transform duration-300 group-hover:scale-105">
+              <Clock strokeWidth={2.5} className="w-[16px] h-[16px] sm:w-6 sm:h-6 shrink-0 relative z-10" />
+            </div>
+            <div className="flex flex-col items-center justify-end w-full text-center mt-auto relative z-10">
+              <p className="text-[7px] sm:text-[10px] text-zinc-400 font-bold uppercase tracking-widest leading-none mb-[3px] sm:mb-1 truncate w-full font-sans">Última alteração</p>
+              <p className="text-[10px] sm:text-xl font-black tracking-tight text-white truncate w-full font-sans leading-none sm:leading-normal">{formatDate(latestUpdateMs)}</p>
+            </div>
           </div>
         </GlassCard>
       </div>
