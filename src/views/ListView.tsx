@@ -10,8 +10,10 @@ import {
   Plus,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
+import { motion } from 'motion/react';
 
 function normalizeGameName(value = '') {
   return String(value)
@@ -41,25 +43,27 @@ function ListViewProviderGroup({
   groupIndex,
   sentData,
   isReadySection,
+  onRemoveGame,
 }: {
   key?: string;
   group: any;
   groupIndex: number;
   sentData?: any;
   isReadySection: boolean;
+  onRemoveGame: (providerName: string, gameDisplayName: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2.5">
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] px-3.5 py-2.5 font-sans text-xs ${
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] active:bg-white/[0.07] border border-white/[0.04] px-4 py-3.5 font-sans text-xs sm:text-sm ${
           isReadySection ? 'text-[#0a84ff]' : 'text-[#ff9f0a]'
-        } backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none`}
+        } backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none min-h-[44px]`}
       >
-        <span className="font-bold truncate flex items-center gap-1.5">
+        <span className="font-bold truncate flex items-center gap-2">
           {isExpanded ? (
             <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
           ) : (
@@ -68,7 +72,7 @@ function ListViewProviderGroup({
           Provedor: <span className="text-white font-black">{group.providerName}</span>
         </span>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${
             isReadySection
               ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/15'
               : 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/15'
@@ -79,12 +83,13 @@ function ListViewProviderGroup({
       </button>
 
       {isExpanded && (
-        <div className="space-y-1.5 pl-2 border-l border-white/[0.05] ml-4.5">
+        <div className="space-y-2 pl-2 border-l border-white/[0.05] ml-4 md:ml-5">
           {group.games?.map((game: any, i: number) => {
+            const providerName = game.providerName || group.providerName;
+            
             if (isReadySection) {
               const normalizedName =
                 game.normalized || normalizeGameName(game.displayName);
-              const providerName = game.providerName || group.providerName;
               const gameKey = createProviderGameKey(
                 providerName,
                 normalizedName,
@@ -102,22 +107,46 @@ function ListViewProviderGroup({
               return (
                 <div
                   key={`${game.displayName}-${i}`}
-                  className={`py-2 px-3 rounded-lg border text-xs font-semibold font-sans truncate shadow-xs transition-transform duration-200 hover:translate-x-0.5 ${
+                  className={`group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl border text-xs sm:text-sm font-semibold font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px] ${
                     isSent
                       ? 'bg-[#30d158]/5 border-[#30d158]/12 text-[#30d158]'
                       : 'bg-[#0a84ff]/5 border-[#0a84ff]/12 text-zinc-300 hover:text-white'
                   }`}
                 >
-                  {game.displayName}
+                  <span className="truncate pr-1">{game.displayName}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      onRemoveGame(providerName, game.displayName);
+                    }}
+                    title="Remover item da lista"
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] shrink-0 z-20 cursor-pointer active:scale-90"
+                  >
+                    <X className="w-3.5 h-3.5 pointer-events-none" />
+                  </button>
                 </div>
               );
             } else {
               return (
                 <div
                   key={`${game.displayName}-${i}`}
-                  className="py-2 px-3 rounded-lg bg-[#ff9f0a]/5 border border-[#ff9f0a]/12 text-xs font-semibold text-zinc-300 hover:text-white font-sans truncate shadow-xs transition-transform duration-200 hover:translate-x-0.5"
+                  className="group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl bg-[#ff9f0a]/5 border border-[#ff9f0a]/12 text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px]"
                 >
-                  {game.displayName}
+                  <span className="truncate pr-1">{game.displayName}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      onRemoveGame(providerName, game.displayName);
+                    }}
+                    title="Remover item da lista"
+                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] shrink-0 z-20 cursor-pointer active:scale-90"
+                  >
+                    <X className="w-3.5 h-3.5 pointer-events-none" />
+                  </button>
                 </div>
               );
             }
@@ -131,10 +160,12 @@ function ListViewProviderGroup({
 export function ListView({
   gameListData,
   recordsData,
+  comparedFiles = [],
   onRefresh,
 }: {
   gameListData: any;
   recordsData?: any;
+  comparedFiles?: any[];
   onRefresh: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -142,16 +173,64 @@ export function ListView({
   const [isLoading, setIsLoading] = useState(false);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [providerInput, setProviderInput] = useState('');
+  const [selectedProviderOption, setSelectedProviderOption] = useState<string>('Sem provedor');
+  const [customProviderInput, setCustomProviderInput] = useState<string>('');
   const [gamesInput, setGamesInput] = useState('');
   const [isSavingMulti, setIsSavingMulti] = useState(false);
   const [activeListTab, setActiveListTab] = useState<'pending' | 'ready'>('pending');
+
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
       loadListContent();
     }
   }, [isEditing]);
+
+  const uniqueProviders = useMemo(() => {
+    const providersSet = new Set<string>();
+
+    // 1. From comparedFiles (source / origin)
+    if (comparedFiles) {
+      comparedFiles.forEach((file: any) => {
+        const segments = file.relativePath?.split(/[\\/]/).filter(Boolean) || [];
+        if (segments.length > 1) {
+          providersSet.add(segments[0]);
+        }
+      });
+    }
+
+    // 2. From gameListData remaining (origin / source / listed)
+    if (gameListData?.remainingGamesByProvider) {
+      gameListData.remainingGamesByProvider.forEach((g: any) => {
+        if (g.providerName) providersSet.add(g.providerName);
+      });
+    }
+
+    // 3. From gameListData ready (listed in list.txt and found in dest)
+    if (gameListData?.readyGamesByProvider) {
+      gameListData.readyGamesByProvider.forEach((g: any) => {
+        if (g.providerName) providersSet.add(g.providerName);
+      });
+    }
+
+    // 4. From recordsData providers (destination)
+    if (recordsData?.providers) {
+      recordsData.providers.forEach((p: any) => {
+        if (p.providerName) providersSet.add(p.providerName);
+      });
+    }
+
+    // Clean, filter out 'Sem provedor', sort alphabetically
+    const list = Array.from(providersSet)
+      .map((name) => name.trim())
+      .filter((name) => name.length > 0 && name.toLowerCase() !== 'sem provedor');
+
+    list.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+
+    return ['Sem provedor', ...list];
+  }, [gameListData, recordsData, comparedFiles]);
 
   const loadListContent = async () => {
     setIsLoading(true);
@@ -185,8 +264,163 @@ export function ListView({
     }
   };
 
+  const handleRemoveGame = async (providerName: string, gameDisplayName: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/list/content');
+      const data = await res.json();
+      const currentContent = data.content || '';
+
+      const lines = currentContent.split(/\r?\n/);
+      
+      const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
+      const getProviderName = (line: string) => {
+        const match = line.match(/^provedor\s*:\s*(.+)$/i);
+        return match?.[1]?.trim() || null;
+      };
+
+      let activeProvider = 'Sem provedor';
+      let targetIndex = -1;
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (isProviderLine(line)) {
+          const name = getProviderName(line);
+          activeProvider = name || 'Sem provedor';
+          continue;
+        }
+
+        const cleanLine = line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
+        if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+          continue;
+        }
+
+        if (
+          normalizeGameName(activeProvider) === normalizeGameName(providerName) &&
+          normalizeGameName(cleanLine) === normalizeGameName(gameDisplayName)
+        ) {
+          targetIndex = i;
+          break;
+        }
+      }
+
+      if (targetIndex !== -1) {
+        lines.splice(targetIndex, 1);
+        const updatedContent = lines.join('\n');
+        
+        await fetch('/api/list/content', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: updatedContent }),
+        });
+        
+        onRefresh();
+      }
+    } catch (e) {
+      console.error('Erro ao remover jogo:', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClearList = async (mode: 'all' | 'delivered') => {
+    setIsClearing(true);
+    try {
+      let finalContent = '';
+      if (mode === 'delivered') {
+        const res = await fetch('/api/list/content');
+        const data = await res.json();
+        const currentContent = data.content || '';
+
+        const lines = currentContent.split(/\r?\n/);
+        const updatedLines: string[] = [];
+
+        const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
+        const getProviderName = (line: string) => {
+          const match = line.match(/^provedor\s*:\s*(.+)$/i);
+          return match?.[1]?.trim() || null;
+        };
+
+        let activeProvider = 'Sem provedor';
+        
+        // Build a lookup set of provider::game for delivered games
+        const deliveredKeys = new Set(
+          (gameListData?.readyGames || []).map((g: any) =>
+            createProviderGameKey(g.providerName || 'Sem provedor', g.normalized || normalizeGameName(g.displayName))
+          )
+        );
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          const trimmed = line.trim();
+          
+          if (isProviderLine(trimmed)) {
+            const name = getProviderName(trimmed);
+            activeProvider = name || 'Sem provedor';
+            updatedLines.push(line);
+            continue;
+          }
+
+          const cleanLine = trimmed.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
+          if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+            updatedLines.push(line);
+            continue;
+          }
+
+          const gameKey = createProviderGameKey(activeProvider, normalizeGameName(cleanLine));
+          if (deliveredKeys.has(gameKey)) {
+            // This is a delivered game, so filter it out (do NOT push to updatedLines)
+            continue;
+          }
+
+          updatedLines.push(line);
+        }
+
+        // Clean up empty provider sections to keep the file tidy
+        const cleanedLines: string[] = [];
+        let pendingProviderLine: string | null = null;
+
+        for (let i = 0; i < updatedLines.length; i++) {
+          const line = updatedLines[i];
+          if (isProviderLine(line.trim())) {
+            pendingProviderLine = line;
+          } else if (line.trim() !== '') {
+            if (pendingProviderLine !== null) {
+              cleanedLines.push(pendingProviderLine);
+              pendingProviderLine = null;
+            }
+            cleanedLines.push(line);
+          } else {
+            // empty line
+            if (pendingProviderLine === null) {
+              cleanedLines.push(line);
+            }
+          }
+        }
+
+        finalContent = cleanedLines.join('\n');
+      }
+
+      await fetch('/api/list/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: finalContent }),
+      });
+      setIsClearModalOpen(false);
+      onRefresh();
+    } catch (e) {
+      console.error('Erro ao limpar lista:', e);
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const handleAddGamesSubmit = async () => {
-    const provider = providerInput.trim();
+    const provider = (selectedProviderOption === 'outro' ? customProviderInput : selectedProviderOption).trim();
     const cleanGamesText = gamesInput.trim();
     if (!cleanGamesText) return;
 
@@ -319,7 +553,8 @@ export function ListView({
         body: JSON.stringify({ content: finalContent }),
       });
 
-      setProviderInput('');
+      setSelectedProviderOption('Sem provedor');
+      setCustomProviderInput('');
       setGamesInput('');
       setIsAddModalOpen(false);
       onRefresh();
@@ -403,87 +638,102 @@ export function ListView({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in relative z-10">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div className="space-y-5 sm:space-y-8 animate-fade-in relative z-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-1 bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
             Gestão da Lista
           </h1>
-          <p className="text-zinc-400 text-xs md:text-sm font-semibold tracking-wide">
+          <p className="text-zinc-[#a1a1aa] text-xs sm:text-sm font-semibold tracking-wide">
             Administre os jogos registrados no acervo mestre da aplicação (lista.txt).
           </p>
         </div>
         <button 
           onClick={exportPendingList}
           disabled={!gameListData?.remainingGames?.length}
-          className="glass-btn-secondary !py-2 !px-4 sm:!py-2.5 sm:!px-5 flex items-center justify-center gap-2 cursor-pointer text-xs sm:text-sm font-bold disabled:opacity-45 disabled:hover:shadow-none w-full sm:w-auto"
+          className="glass-btn-secondary min-h-[44px] !py-2.5 !px-5 flex items-center justify-center gap-2.5 cursor-pointer text-xs sm:text-sm font-bold disabled:opacity-45 disabled:hover:shadow-none w-full sm:w-auto rounded-xl shadow-md"
         >
-          <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-zinc-500 shrink-0" />
-          Exportar Pendentes
+          <Download className="w-4 h-4 text-zinc-450 shrink-0" />
+          <span>Exportar Pendentes</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         <GlassCard className="flex flex-col min-h-[550px] !p-0 overflow-hidden relative shadow-2xl border-white/[0.08]">
-          <div className="p-4 sm:p-6 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.015] gap-3">
-            <div className="flex items-center gap-2">
-              <List className="w-4.5 h-4.5 text-[#0a84ff] shrink-0" />
-              <h3 className="font-extrabold text-xs sm:text-base text-white">
-                Catalogação do Acervo (lista.txt)
-              </h3>
+          <div className="p-4 sm:p-6 border-b border-white/[0.05] flex flex-col sm:flex-row justify-between sm:items-center bg-white/[0.015] gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2.5 bg-[#0a84ff]/10 border border-[#0a84ff]/15 rounded-xl">
+                <List className="w-5 h-5 text-[#0a84ff] shrink-0" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-sm sm:text-base text-white">
+                  Catalogação do Acervo (lista.txt)
+                </h3>
+                <p className="text-[10px] text-zinc-400 font-semibold tracking-wide mt-0.5 sm:block hidden">
+                  Gerencie os títulos e provedores cadastrados.
+                </p>
+              </div>
             </div>
             {!isEditing ? (
-              <div className="flex gap-1.5 select-none shrink-0">
+              <div className="flex flex-wrap items-center gap-2 select-none w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(true)}
-                  className="glass-btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-[10px] sm:text-xs font-black cursor-pointer flex items-center gap-1 shrink-0"
+                  className="glass-btn-primary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-black cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
                 >
-                  <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <Plus className="w-4 h-4 shrink-0" />
                   <span>Adicionar</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="glass-btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-[10px] sm:text-xs font-bold cursor-pointer flex items-center gap-1 shrink-0"
+                  className="glass-btn-secondary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-bold cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
                 >
-                  <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                  <Edit2 className="w-4 h-4 shrink-0" />
                   <span>Editar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsClearModalOpen(true)}
+                  className="min-h-[44px] bg-[#ff453a]/12 border border-[#ff453a]/25 text-[#ff453a] hover:bg-[#ff453a]/20 hover:border-[#ff453a]/40 active:scale-95 py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-bold rounded-xl cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 transition-all duration-200"
+                >
+                  <Trash2 className="w-4 h-4 shrink-0" />
+                  <span>Limpar</span>
                 </button>
               </div>
             ) : (
-              <div className="flex gap-1.5 select-none shrink-0">
+              <div className="flex flex-wrap items-center gap-2 select-none w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
                   disabled={isLoading}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[10px] sm:text-xs font-semibold hover:bg-white/[0.04] transition-all cursor-pointer text-zinc-400 hover:text-white shrink-0"
+                  className="min-h-[44px] flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[11px] sm:text-xs font-semibold hover:bg-white/[0.04] transition-all cursor-pointer text-zinc-400 hover:text-white shrink-0"
                 >
-                  <X className="w-3.5 h-3.5" />
-                  Cancelar
+                  <X className="w-4 h-4 shrink-0" />
+                  <span>Cancelar</span>
                 </button>
                 <button
                   type="button"
                   onClick={saveListContent}
                   disabled={isLoading}
-                  className="glass-btn-primary !py-1.5 !px-2.5 sm:!py-2 sm:!px-4 text-[10px] sm:text-xs font-black cursor-pointer flex items-center gap-1 shrink-0"
+                  className="glass-btn-primary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-black cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
                 >
-                  <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                  Salvar
+                  <Save className="w-4 h-4 shrink-0" />
+                  <span>Salvar</span>
                 </button>
               </div>
             )}
           </div>
           <div className="flex-1 relative flex flex-col">
-            {/* Abas discretas e óbvias para o Mobile */}
+            {/* Abas com design premium estilo iOS para o Mobile */}
             {!isEditing && (
-              <div className="flex md:hidden border-b border-white/[0.05] p-2 bg-white/[0.015] gap-1.5 shrink-0 select-none">
+              <div className="flex md:hidden border border-white/[0.04] p-1.5 bg-zinc-950/40 gap-1 shrink-0 select-none m-4 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setActiveListTab('pending')}
-                  className={`flex-1 py-1.5 text-center text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${
                     activeListTab === 'pending'
-                      ? 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/15 shadow-sm'
+                      ? 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/20 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-350 border border-transparent'
                   }`}
                 >
@@ -492,9 +742,9 @@ export function ListView({
                 <button
                   type="button"
                   onClick={() => setActiveListTab('ready')}
-                  className={`flex-1 py-1.5 text-center text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${
                     activeListTab === 'ready'
-                      ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/15 shadow-sm'
+                      ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/20 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-350 border border-transparent'
                   }`}
                 >
@@ -519,13 +769,13 @@ export function ListView({
                   {/* Seção Prontos */}
                   <div className={`flex flex-col ${activeListTab === 'ready' ? 'flex' : 'hidden md:flex'}`}>
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#0a84ff] shrink-0 text-xs sm:text-sm">
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-4 h-4 shrink-0" />
                       Prontos ({gameListData.completedGames})
                     </h4>
-                    <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-1.5 px-3 rounded-lg flex-shrink-0 leading-relaxed font-sans font-semibold">
+                    <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-2 px-3 rounded-xl flex-shrink-0 leading-relaxed font-sans font-semibold">
                       Jogos que constam na lista.txt e já possuem miniatura correspondente no acervo.
                     </p>
-                    <div className="space-y-2.5 pr-1.5">
+                    <div className="space-y-2.5 pr-1.5 overflow-y-auto max-h-[60vh] md:max-h-[560px] custom-scrollbar pb-6">
                       {readyGroups.map((group: any, groupIndex: number) => (
                         <ListViewProviderGroup
                           key={`ready-${group.providerName}-${groupIndex}`}
@@ -533,32 +783,34 @@ export function ListView({
                           groupIndex={groupIndex}
                           sentData={sentData}
                           isReadySection={true}
+                          onRemoveGame={handleRemoveGame}
                         />
                       ))}
                       {gameListData.readyGames?.length === 0 && (
-                        <p className="text-center py-20 text-zinc-600 text-xs italic font-semibold font-sans">
+                        <p className="text-center py-20 text-zinc-650 text-xs italic font-semibold font-sans">
                           Nenhum jogo pronto catalogado.
                         </p>
                       )}
                     </div>
                   </div>
- 
+  
                   {/* Seção Faltando */}
                   <div className={`flex flex-col ${activeListTab === 'pending' ? 'flex' : 'hidden md:flex'}`}>
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#ff9f0a] shrink-0 text-xs sm:text-sm">
-                      <Clock className="w-4 h-4" />
+                      <Clock className="w-4 h-4 shrink-0" />
                       Faltando ({gameListData.remainingGames?.length || 0})
                     </h4>
-                    <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-1.5 px-3 rounded-lg flex-shrink-0 leading-relaxed font-sans font-semibold">
+                    <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-2 px-3 rounded-xl flex-shrink-0 leading-relaxed font-sans font-semibold">
                       Jogos na lista.txt sem imagem correspondente na pasta de origem local.
                     </p>
-                    <div className="space-y-2.5 pr-1.5">
+                    <div className="space-y-2.5 pr-1.5 overflow-y-auto max-h-[60vh] md:max-h-[560px] custom-scrollbar pb-6">
                       {remainingGroups.map((group: any, groupIndex: number) => (
                         <ListViewProviderGroup
                           key={`remaining-${group.providerName}-${groupIndex}`}
                           group={group}
                           groupIndex={groupIndex}
                           isReadySection={false}
+                          onRemoveGame={handleRemoveGame}
                         />
                       ))}
                       {gameListData.remainingGames?.length === 0 && (
@@ -568,7 +820,7 @@ export function ListView({
                       )}
                     </div>
                   </div>
- 
+  
                 </div>
               </div>
             )}
@@ -587,7 +839,8 @@ export function ListView({
               <button
                 type="button"
                 onClick={() => {
-                  setProviderInput('');
+                  setSelectedProviderOption('Sem provedor');
+                  setCustomProviderInput('');
                   setGamesInput('');
                   setIsAddModalOpen(false);
                 }}
@@ -602,15 +855,50 @@ export function ListView({
                 <label className="text-xs font-bold text-zinc-400 block font-sans">
                   Nome do Provedor
                 </label>
-                <input
-                  type="text"
-                  placeholder="Ex: Pragmatic Play ou Sem provedor"
-                  value={providerInput}
-                  onChange={(e) => setProviderInput(e.target.value)}
-                  className="w-full glass-input"
-                />
+                <div className="relative">
+                  <select
+                    value={selectedProviderOption}
+                    onChange={(e) => {
+                      setSelectedProviderOption(e.target.value);
+                      if (e.target.value !== 'outro') {
+                        setCustomProviderInput('');
+                      }
+                    }}
+                    className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
+                  >
+                    {uniqueProviders.map((prov) => (
+                      <option key={prov} value={prov} className="bg-zinc-900 text-white">
+                        {prov === 'Sem provedor' ? 'Sem provedor (Geral)' : prov}
+                      </option>
+                    ))}
+                    <option value="outro" className="bg-zinc-900 text-white">
+                      ✨ Outro (Digitar manualmente...)
+                    </option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {selectedProviderOption === 'outro' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-2.5"
+                  >
+                    <input
+                      type="text"
+                      placeholder="Ex: Pragmatic Play, PG Soft, etc."
+                      value={customProviderInput}
+                      onChange={(e) => setCustomProviderInput(e.target.value)}
+                      className="w-full bg-white/[0.04] border border-white/[0.12] hover:border-white/20 focus:border-[#0a84ff] hover:bg-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none transition-all"
+                    />
+                  </motion.div>
+                )}
+
                 <p className="text-[10px] text-zinc-500 font-medium font-sans leading-relaxed">
-                  Os jogos informados abaixo serão criados sob este provedor. Se deixado em branco, serão colocados na seção geral de jogos sem provedor.
+                  Escolha um provedor do acervo mestre ou selecione "Outro" para definir um novo provedor.
                 </p>
               </div>
 
@@ -635,7 +923,8 @@ Sugar Rush`}
               <button
                 type="button"
                 onClick={() => {
-                  setProviderInput('');
+                  setSelectedProviderOption('Sem provedor');
+                  setCustomProviderInput('');
                   setGamesInput('');
                   setIsAddModalOpen(false);
                 }}
@@ -650,6 +939,77 @@ Sugar Rush`}
                 className="glass-btn-primary !py-2 !px-4 text-xs font-black cursor-pointer"
               >
                 {isSavingMulti ? 'Salvando...' : 'Adicionar e Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isClearModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
+          <div className="relative w-full max-w-md acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-5">
+            <div className="flex items-center gap-3 text-[#ff453a]">
+              <div className="p-2.5 bg-[#ff453a]/10 border border-[#ff453a]/15 rounded-xl">
+                <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-base text-white font-sans">
+                  Limpar Catalogação
+                </h3>
+                <p className="text-[11px] text-zinc-400 font-semibold font-sans mt-0.5">
+                  Confirmar alteração em lista.txt
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs text-zinc-300 font-sans leading-relaxed">
+              <p>
+                Como deseja realizar a limpeza da lista? Você pode excluir tudo ou manter os faltantes removendo apenas os itens já entregues.
+              </p>
+              <div className="p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] space-y-1 mt-1 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Total na lista:</span>
+                  <span className="font-extrabold text-white">{gameListData?.totalListedGames || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Já entregues (Prontos):</span>
+                  <span className="font-extrabold text-[#0a84ff]">{gameListData?.completedGames || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Restantes (Faltando):</span>
+                  <span className="font-extrabold text-[#ff9f0a]">{gameListData?.remainingGames?.length || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2.5 select-none pt-2.5">
+              <button
+                type="button"
+                onClick={() => handleClearList('delivered')}
+                disabled={isClearing || !gameListData?.completedGames}
+                className="w-full bg-[#0a84ff]/10 hover:bg-[#0a84ff]/20 border border-[#0a84ff]/25 active:scale-95 text-[#0a84ff] py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-2 disabled:opacity-40 disabled:scale-100 min-h-[44px]"
+              >
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>Limpar apenas Entregues ({gameListData?.completedGames || 0})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleClearList('all')}
+                disabled={isClearing}
+                className="w-full bg-[#ff453a] hover:bg-[#ff453a]/90 active:scale-95 text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer text-center flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,69,58,0.2)] disabled:opacity-50 min-h-[44px]"
+              >
+                <Trash2 className="w-4 h-4 shrink-0" />
+                <span>Sim, Limpar tudo ({gameListData?.totalListedGames || 0})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(false)}
+                disabled={isClearing}
+                className="w-full py-3 px-4 rounded-xl border border-white/[0.08] hover:bg-white/[0.05] active:bg-white/[0.1] text-zinc-300 font-bold text-xs sm:text-sm transition-all cursor-pointer text-center min-h-[44px]"
+              >
+                Cancelar
               </button>
             </div>
           </div>

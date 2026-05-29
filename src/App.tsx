@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings } from 'lucide-react';
+import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
@@ -15,6 +15,72 @@ export default function App() {
   const [config, setConfig] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isAnalyzingRef = useRef(false);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showFullscreenToast, setShowFullscreenToast] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(
+        !!(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement ||
+          (document as any).mozFullScreenElement ||
+          (document as any).msFullscreenElement
+        )
+      );
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    try {
+      const doc = document as any;
+      const docEl = document.documentElement as any;
+
+      if (!doc.fullscreenElement && !doc.webkitFullscreenElement && !doc.mozFullScreenElement && !doc.msFullscreenElement) {
+        if (docEl.requestFullscreen) {
+          await docEl.requestFullscreen();
+        } else if (docEl.webkitRequestFullscreen) {
+          await docEl.webkitRequestFullscreen();
+        } else if (docEl.webkitEnterFullscreen) {
+          await docEl.webkitEnterFullscreen();
+        } else if (docEl.mozRequestFullScreen) {
+          await docEl.mozRequestFullScreen();
+        } else if (docEl.msRequestFullscreen) {
+          await docEl.msRequestFullscreen();
+        } else {
+          setShowFullscreenToast(true);
+        }
+      } else {
+        if (doc.exitFullscreen) {
+          await doc.exitFullscreen();
+        } else if (doc.webkitExitFullscreen) {
+          await doc.webkitExitFullscreen();
+        } else if (doc.mozCancelFullScreen) {
+          await doc.mozCancelFullScreen();
+        } else if (doc.msExitFullscreen) {
+          await doc.msExitFullscreen();
+        } else {
+          setShowFullscreenToast(true);
+        }
+      }
+    } catch (err) {
+      console.warn("Fullscreen toggle failed, falling back to PWA instructions:", err);
+      setShowFullscreenToast(true);
+    }
+  }, []);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -82,6 +148,7 @@ export default function App() {
           <ListView
             gameListData={analysisData?.gameListData}
             recordsData={analysisData?.recordsData}
+            comparedFiles={analysisData?.comparedFiles}
             onRefresh={runAnalysis}
           />
         );
@@ -127,10 +194,21 @@ export default function App() {
           />
           <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="text-[10px] font-black text-[#0a84ff] uppercase bg-[#0a84ff]/10 border border-[#0a84ff]/15 px-2.5 py-1 rounded-full tracking-wider font-sans">
             {menuItems.find(item => item.id === activeTab)?.label}
           </div>
+          <button
+            onClick={toggleFullscreen}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] text-white active:scale-90 active:bg-white/[0.12] transition-all cursor-pointer"
+            aria-label="Toggle Fullscreen"
+          >
+            {isFullscreen ? (
+              <Minimize className="w-4 h-4 text-zinc-300" />
+            ) : (
+              <Maximize className="w-4 h-4 text-zinc-300" />
+            )}
+          </button>
         </div>
       </header>
 
@@ -169,6 +247,70 @@ export default function App() {
           );
         })}
       </nav>
+
+      {/* iOS/Safari Fullscreen Instruction Bottom Sheet */}
+      <AnimatePresence>
+        {showFullscreenToast && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm md:hidden">
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 220 }}
+              className="w-full max-w-md bg-zinc-900/95 border-t border-white/[0.08] rounded-t-3xl p-6 pb-10 shadow-2xl relative select-none font-sans"
+            >
+              <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
+              
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Maximize className="w-5 h-5 text-[#0a84ff]" />
+                  Tela Cheia no iOS
+                </h3>
+                <button
+                  onClick={() => setShowFullscreenToast(false)}
+                  className="w-8 h-8 rounded-full bg-white/[0.06] flex items-center justify-center text-zinc-400 active:scale-90"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-400 mb-6 leading-relaxed font-semibold">
+                O iOS Safari restringe o acionamento de tela cheia padrão via navegador. Siga os passos simples do ecossistema Apple para usufruir de tela inteira sem as barras do navegador:
+              </p>
+
+              <div className="space-y-4 mb-6">
+                <div className="flex items-start gap-3 bg-white/[0.02] border border-white/[0.04] p-3.5 rounded-2xl">
+                  <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-[#0a84ff]/10 text-[#0a84ff] text-xs font-bold font-mono">1</span>
+                  <div className="text-xs text-zinc-300 leading-relaxed font-semibold">
+                    Toque no ícone de <span className="text-white font-bold inline-flex items-center gap-1">Compartilhar <Share2 className="w-3.5 h-3.5 text-[#0a84ff]" /></span> na barra inferior do Safari.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-white/[0.02] border border-white/[0.04] p-3.5 rounded-2xl">
+                  <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-white/5 text-white text-xs font-bold font-mono">2</span>
+                  <div className="text-xs text-zinc-300 leading-relaxed font-semibold">
+                    Role a lista para baixo e selecione a opção <span className="text-white font-bold inline-flex items-center gap-1">Adicionar à Tela de Início <Plus className="w-3.5 h-3.5 text-[#30d158]" /></span>.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 bg-white/[0.02] border border-white/[0.04] p-3.5 rounded-2xl">
+                  <span className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-[#30d158]/10 text-[#30d158] text-xs font-bold font-mono">3</span>
+                  <div className="text-xs text-zinc-300 leading-relaxed font-semibold">
+                    Abra o ícone criado na tela inicial do seu celular. O site rodará como um app nativo em tela inteira!
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowFullscreenToast(false)}
+                className="w-full py-3.5 bg-[#0a84ff] text-white rounded-2xl text-sm font-bold active:bg-[#0071e3] transition-colors focus:outline-none"
+              >
+                Entendido
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   );
