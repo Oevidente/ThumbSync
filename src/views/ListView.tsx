@@ -13,6 +13,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 
 function normalizeGameName(value = '') {
@@ -828,8 +829,8 @@ export function ListView({
         </GlassCard>
       </div>
 
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
+      {isAddModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
           <div className="relative w-full max-w-lg acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center pb-3.5 border-b border-white/[0.05]">
               <h3 className="font-extrabold text-base flex items-center gap-2 text-white font-sans">
@@ -942,11 +943,12 @@ Sugar Rush`}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {isClearModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
+      {isClearModalOpen && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
           <div className="relative w-full max-w-md acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-5">
             <div className="flex items-center gap-3 text-[#ff453a]">
               <div className="p-2.5 bg-[#ff453a]/10 border border-[#ff453a]/15 rounded-xl">
@@ -1013,7 +1015,8 @@ Sugar Rush`}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

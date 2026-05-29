@@ -15,6 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 type ViewMode = "gallery" | "list";
 type SortOrder = "newest" | "oldest";
@@ -963,32 +964,37 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
 
   const renderCustomizationPanel = () => {
     if (!isEditModalOpen) return null;
-    return (
+    return createPortal(
       <div 
-        id="provider-cover-editor-panel"
-        className="relative w-full bg-white/[0.03] border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 border-t-fluent-accent/50 mb-8 max-w-5xl mx-auto"
+        onClick={() => setIsEditModalOpen(false)}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 sm:p-6 animate-fade-in"
       >
-        {/* Header */}
-        <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 font-sans">
-              <Edit2 className="w-4 h-4 text-fluent-accent" />
-              Personalizar Capa do Provedor
-            </h3>
-            <p className="text-xs text-gray-400 mt-0.5 font-sans">Customize o visual da marca, logotipo, título e efeitos de cor.</p>
+        <div 
+          onClick={(e) => e.stopPropagation()}
+          id="provider-cover-editor-panel"
+          className="relative w-full max-w-4xl bg-zinc-950/95 acrylic border border-white/10 rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 max-h-[90vh]"
+        >
+          {/* Header */}
+          <div className="px-6 py-4 bg-white/[0.02] border-b border-white/5 flex items-center justify-between shrink-0">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 font-sans">
+                <Edit2 className="w-4 h-4 text-fluent-accent" />
+                Personalizar Capa do Provedor
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5 font-sans">Customize o visual da marca, logotipo, título e efeitos de cor.</p>
+            </div>
+            <button
+              onClick={() => setIsEditModalOpen(false)}
+              className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all text-sm font-semibold cursor-pointer"
+            >
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => setIsEditModalOpen(false)}
-            className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 active:scale-95 transition-all text-sm font-semibold cursor-pointer"
-          >
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
 
-        {/* Content Body */}
-        <div className="p-6 space-y-6 flex-1">
+          {/* Content Body */}
+          <div className="p-6 space-y-6 flex-1 overflow-y-auto custom-scrollbar">
           
           {/* Dropdown de Provedor */}
           <div className="bg-white/[0.02] border border-white/5 p-4 rounded-xl space-y-2">
@@ -1216,8 +1222,10 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
           </div>
         </div>
       </div>
-    );
-  };
+    </div>,
+    document.body
+  );
+};
 
   if (!recordsData) {
     return <div className="p-10 text-center opacity-50">Carregando registros...</div>;
