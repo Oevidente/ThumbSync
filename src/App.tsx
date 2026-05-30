@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X } from 'lucide-react';
+import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X, CloudLightning, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
@@ -8,6 +8,15 @@ import { ListView } from './views/ListView';
 import { RecordsView } from './views/RecordsView';
 import { SettingsView } from './views/SettingsView';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  parseListContentClient,
+  getCachedAnalysisData,
+  saveCachedAnalysisData,
+  getCachedListContent,
+  getPendingChangesFlag,
+  clearPendingChangesFlag,
+  saveServerStableContent
+} from './utils/offlineSync';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -18,6 +27,12 @@ export default function App() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showFullscreenToast, setShowFullscreenToast] = useState(false);
+
+  // Connection states
+  const [isServerOnline, setIsServerOnline] = useState(true);
+  const [hasPendingSync, setHasPendingSync] = useState(false);
+  const [syncingOfflineChanges, setSyncingOfflineChanges] = useState(false);
+  const [showSyncSuccessToast, setShowSyncSuccessToast] = useState(false);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -87,8 +102,13 @@ export default function App() {
       const res = await fetch('/api/config');
       const data = await res.json();
       setConfig(data);
+      localStorage.setItem('thumbsync_config_cache', JSON.stringify(data));
     } catch (e) {
-      console.error(e);
+      console.warn('Using cached configuration settings.', e);
+      const cached = localStorage.getItem('thumbsync_config_cache');
+      if (cached) {
+        setConfig(JSON.parse(cached));
+      }
     }
   }, []);
 
@@ -96,32 +116,110 @@ export default function App() {
     if (isAnalyzingRef.current) return;
     isAnalyzingRef.current = true;
     if (!silent) setIsLoading(true);
+
     try {
       const res = await fetch('/api/analyze');
+      if (!res.ok) throw new Error("Unreachable");
       const data = await res.json();
+
+      setIsServerOnline(true);
+      saveCachedAnalysisData(data);
       setAnalysisData(data);
+
+      // Keep Server Stable List Cache fresh
+      try {
+        const listRes = await fetch('/api/list/content');
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          saveServerStableContent(listData.content || '');
+        }
+      } catch (listErr) {
+        console.warn("Failed to sync stable content cache:", listErr);
+      }
     } catch (e) {
-      console.error(e);
+      console.warn("Express backend offline. Falling back to optimistic cached values.");
+      setIsServerOnline(false);
+
+      let cached = getCachedAnalysisData();
+      if (cached) {
+        // If we have local edits in offline mode, recalculate gameListData automatically client-side!
+        if (getPendingChangesFlag()) {
+          const pendingContent = getCachedListContent();
+          const localGameListData = parseListContentClient(
+            pendingContent,
+            cached.comparedFiles || [],
+            cached.recordsData || {}
+          );
+          cached = {
+            ...cached,
+            gameListData: localGameListData
+          };
+        }
+        setAnalysisData(cached);
+      }
     } finally {
       isAnalyzingRef.current = false;
       if (!silent) setIsLoading(false);
     }
   }, []);
 
+  const syncOfflineChangesToServer = useCallback(async () => {
+    if (syncingOfflineChanges) return;
+    const pendingContent = getCachedListContent();
+    if (!pendingContent) return;
+
+    setSyncingOfflineChanges(true);
+    try {
+      const res = await fetch('/api/list/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: pendingContent }),
+      });
+
+      if (res.ok) {
+        clearPendingChangesFlag(pendingContent);
+        setHasPendingSync(false);
+        setShowSyncSuccessToast(true);
+        setTimeout(() => setShowSyncSuccessToast(false), 5000);
+        await runAnalysis(true);
+      } else {
+        throw new Error("Server rejected transfer");
+      }
+    } catch (e) {
+      console.error("Auto Sync: Server rejected or could not reach.", e);
+    } finally {
+      setSyncingOfflineChanges(false);
+    }
+  }, [runAnalysis, syncingOfflineChanges]);
+
+  // Initial load
   useEffect(() => {
+    setHasPendingSync(getPendingChangesFlag());
     fetchConfig();
     runAnalysis();
   }, [fetchConfig, runAnalysis]);
 
+  // Network connection auto-trigger sync when server is online and we have pending actions
+  useEffect(() => {
+    if (isServerOnline && hasPendingSync && !syncingOfflineChanges) {
+      syncOfflineChangesToServer();
+    }
+  }, [isServerOnline, hasPendingSync, syncingOfflineChanges, syncOfflineChangesToServer]);
+
+  // Continuous background status polling (Runs every 5s keeping interfaces crisp)
   useEffect(() => {
     const timer = setInterval(() => {
       if (document.visibilityState === 'visible') {
         runAnalysis(true);
+        setHasPendingSync(getPendingChangesFlag());
       }
     }, 5000);
 
     return () => clearInterval(timer);
   }, [runAnalysis]);
+
 
   const renderContent = () => {
     switch (activeTab) {
@@ -131,6 +229,10 @@ export default function App() {
             analysisData={analysisData}
             onRefresh={runAnalysis}
             isLoading={isLoading}
+            isServerOnline={isServerOnline}
+            hasPendingSync={hasPendingSync}
+            syncingOfflineChanges={syncingOfflineChanges}
+            onManualSync={syncOfflineChangesToServer}
           />
         );
       case 'analyzer':
@@ -150,6 +252,9 @@ export default function App() {
             recordsData={analysisData?.recordsData}
             comparedFiles={analysisData?.comparedFiles}
             onRefresh={runAnalysis}
+            isServerOnline={isServerOnline}
+            hasPendingSync={hasPendingSync}
+            onOfflineListEdit={() => setHasPendingSync(getPendingChangesFlag())}
           />
         );
       case 'records':
@@ -162,6 +267,10 @@ export default function App() {
             analysisData={analysisData}
             onRefresh={runAnalysis}
             isLoading={isLoading}
+            isServerOnline={isServerOnline}
+            hasPendingSync={hasPendingSync}
+            syncingOfflineChanges={syncingOfflineChanges}
+            onManualSync={syncOfflineChangesToServer}
           />
         );
     }
@@ -182,7 +291,12 @@ export default function App() {
       <div className="absolute pointer-events-none top-[-25%] right-[-15%] w-[650px] h-[650px] bg-[#0a84ff]/8 rounded-full blur-[140px] z-0" />
       <div className="absolute pointer-events-none bottom-[-20%] left-[-15%] w-[600px] h-[600px] bg-[#30d158]/5 rounded-full blur-[130px] z-0" />
 
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        isServerOnline={isServerOnline}
+        hasPendingSync={hasPendingSync}
+      />
 
       {/* Mobile Sticky Header */}
       <header className="md:hidden sticky top-0 z-40 bg-[#070709]/85 backdrop-blur-xl border-b border-white/[0.05] px-5 py-4 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] select-none">
@@ -309,6 +423,30 @@ export default function App() {
               </button>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Dynamic Sync Toast Notification */}
+      <AnimatePresence>
+        {showSyncSuccessToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-20 right-6 z-[100] max-w-sm w-full bg-[#1c1c1e]/90 backdrop-blur-xl border border-emerald-500/20 shadow-2xl rounded-2xl p-4 flex items-center gap-3.5 select-none text-white font-sans text-left"
+          >
+            <div className="w-[38px] h-[38px] overflow-hidden rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-xs font-black tracking-wide leading-normal">
+                Sincronização Concluída!
+              </h4>
+              <p className="text-[10px] text-zinc-300 font-semibold tracking-wide leading-normal mt-0.5">
+                Alterações da lista enviadas ao servidor.
+              </p>
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
 

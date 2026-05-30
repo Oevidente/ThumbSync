@@ -4,9 +4,11 @@ import { motion } from "motion/react";
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  isServerOnline?: boolean;
+  hasPendingSync?: boolean;
 }
 
-export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, isServerOnline = true, hasPendingSync = false }: SidebarProps) {
   const menuItems = [
     { id: "dashboard", icon: Home, label: "Visão Geral" },
     { id: "analyzer", icon: Search, label: "Analisador" },
@@ -55,9 +57,34 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         })}
       </nav>
       
-      <div className="mt-auto px-2 py-4 text-[10px] uppercase tracking-widest text-[#8a8a93] font-bold flex items-center gap-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-[#30d158] shadow-[0_0_8px_rgba(48,209,88,0.8)]" />
-        v2.0.0 alpha
+      <div className="mt-auto px-2 py-4 flex flex-col gap-2 font-sans select-none border-t border-white/[0.04] pt-4">
+        <div className="text-[10px] uppercase tracking-widest text-[#8a8a93] font-bold flex items-center gap-2">
+          {isServerOnline ? (
+            <>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#30d158] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#30d158] shadow-[0_0_8px_rgba(48,209,88,0.8)]"></span>
+              </span>
+              <span>Servidor Conectado</span>
+            </>
+          ) : (
+            <>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff9f0a] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ff9f0a] shadow-[0_0_8px_rgba(255,159,10,0.8)]"></span>
+              </span>
+              <span className="text-zinc-400">Modo Local (Offline)</span>
+            </>
+          )}
+        </div>
+        {hasPendingSync && (
+          <div className="text-[9px] font-black tracking-wide text-[#ff9f0a] bg-[#ff9f0a]/8 border border-[#ff9f0a]/15 rounded-lg py-1 px-2.5 flex items-center justify-center gap-1.5 shadow-sm transition-all duration-300">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#ff9f0a]"></span>
+            </span>
+            <span>Sincronização Pendente</span>
+          </div>
+        )}
       </div>
     </div>
   );

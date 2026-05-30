@@ -256,16 +256,27 @@ export function Dashboard({
   analysisData,
   onRefresh,
   isLoading,
+  isServerOnline = true,
+  hasPendingSync = false,
+  syncingOfflineChanges = false,
+  onManualSync,
 }: {
   analysisData: any;
   onRefresh: () => void;
   isLoading: boolean;
+  isServerOnline?: boolean;
+  hasPendingSync?: boolean;
+  syncingOfflineChanges?: boolean;
+  onManualSync?: () => void;
 }) {
   if (!analysisData)
     return (
-      <div className="p-16 text-center text-zinc-400 font-semibold flex items-center justify-center gap-3 animate-pulse">
-        <RefreshCw className="w-5 h-5 animate-spin" />
-        Carregando console de controle...
+      <div className="p-16 text-center text-zinc-400 font-semibold flex flex-col items-center justify-center gap-4 animate-pulse">
+        <RefreshCw className="w-6 h-6 animate-spin text-[#0a84ff]" />
+        <div className="space-y-1">
+          <p className="text-sm font-bold text-white">Carregando console de controle...</p>
+          <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">Verificando bases de dados locais e remotas</p>
+        </div>
       </div>
     );
 
@@ -378,25 +389,52 @@ export function Dashboard({
             Sincronização estendida de miniaturas de jogos
           </p>
         </div>
-        <button
-          onClick={onRefresh}
-          disabled={isLoading}
-          className="glass-btn-secondary !py-2.5 !px-5 flex items-center gap-2 cursor-pointer text-sm"
-        >
-          <motion.span
-            className="inline-flex"
-            animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
-            transition={{
-              duration: isLoading ? 0.8 : 0.2,
-              ease: 'linear',
-              repeat: isLoading ? Infinity : 0,
-            }}
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          {hasPendingSync && isServerOnline && onManualSync && (
+            <button
+              onClick={onManualSync}
+              disabled={syncingOfflineChanges}
+              className="glass-btn-secondary !py-2.5 !px-5 flex items-center justify-center gap-2 cursor-pointer text-sm font-bold border-amber-500/30 text-amber-500 hover:bg-amber-500/10 w-full sm:w-auto"
+            >
+              <RefreshCw className={`w-4 h-4 shrink-0 ${syncingOfflineChanges ? 'animate-spin' : ''}`} />
+              Sincronizar Manual
+            </button>
+          )}
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            className="glass-btn-secondary !py-2.5 !px-5 flex items-center justify-center gap-2 cursor-pointer text-sm w-full sm:w-auto"
           >
-            <RefreshCw className="w-4 h-4" />
-          </motion.span>
-          Sincronizar
-        </button>
+            <motion.span
+              className="inline-flex shrink-0"
+              animate={isLoading ? { rotate: 360 } : { rotate: 0 }}
+              transition={{
+                duration: isLoading ? 0.8 : 0.2,
+                ease: 'linear',
+                repeat: isLoading ? Infinity : 0,
+              }}
+            >
+              <RefreshCw className="w-4 h-4" />
+            </motion.span>
+            <span>{isServerOnline ? 'Sincronizar' : 'Verificar Conexão'}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Server Offline Indicator Banner */}
+      {!isServerOnline && (
+        <div className="bg-[#ff9f0a]/10 border border-[#ff9f0a]/20 rounded-2xl p-4 flex gap-3 text-left font-sans shadow-lg select-none">
+          <Clock className="w-5 h-5 text-[#ff9f0a] shrink-0 mt-0.5 animate-pulse" />
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black text-white leading-normal">
+              Informação Sincronizada Localmente
+            </h4>
+            <p className="text-[10px] text-zinc-400 font-semibold tracking-wide leading-relaxed">
+              Exibindo dados armazenados em cache. O servidor central de arquivos está offline no momento. Você ainda pode usar o app e alterar dados tranquilamente; todo o acervo será sincronizado ao ligar o computador!
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-5 gap-1.5 sm:gap-4">
         {stats.map((stat) => (

@@ -11,10 +11,15 @@ import {
   ChevronDown,
   ChevronRight,
   Trash2,
+  RefreshCw,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
+import {
+  getCachedListContent,
+  saveLocalListContent,
+} from '../utils/offlineSync';
 
 function normalizeGameName(value = '') {
   return String(value)
@@ -163,11 +168,17 @@ export function ListView({
   recordsData,
   comparedFiles = [],
   onRefresh,
+  isServerOnline = true,
+  hasPendingSync = false,
+  onOfflineListEdit,
 }: {
   gameListData: any;
   recordsData?: any;
   comparedFiles?: any[];
   onRefresh: () => void;
+  isServerOnline?: boolean;
+  hasPendingSync?: boolean;
+  onOfflineListEdit?: () => void;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [listContent, setListContent] = useState('');
@@ -233,12 +244,52 @@ export function ListView({
     return ['Sem provedor', ...list];
   }, [gameListData, recordsData, comparedFiles]);
 
+  const getCurrentListContent = async (): Promise<string> => {
+    if (!isServerOnline) {
+      return getCachedListContent();
+    }
+    try {
+      const res = await fetch('/api/list/content');
+      if (res.ok) {
+        const data = await res.json();
+        return data.content || '';
+      }
+    } catch (e) {
+      console.warn("Failed standard fetching of list content offline fallback triggered.", e);
+    }
+    return getCachedListContent();
+  };
+
+  const persistListContent = async (updatedContent: string) => {
+    if (!isServerOnline) {
+      saveLocalListContent(updatedContent, true);
+      if (onOfflineListEdit) onOfflineListEdit();
+      onRefresh();
+      return;
+    }
+    try {
+      const res = await fetch('/api/list/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: updatedContent }),
+      });
+      if (!res.ok) throw new Error();
+      onRefresh();
+    } catch (e) {
+      console.warn("Persistent save error offline queue fallback triggered.", e);
+      saveLocalListContent(updatedContent, true);
+      if (onOfflineListEdit) onOfflineListEdit();
+      onRefresh();
+    }
+  };
+
   const loadListContent = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/list/content');
-      const data = await res.json();
-      setListContent(data.content || '');
+      const content = await getCurrentListContent();
+      setListContent(content);
     } catch (e) {
       console.error(e);
     } finally {
@@ -249,15 +300,8 @@ export function ListView({
   const saveListContent = async () => {
     setIsLoading(true);
     try {
-      await fetch('/api/list/content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: listContent }),
-      });
+      await persistListContent(listContent);
       setIsEditing(false);
-      onRefresh();
     } catch (e) {
       console.error(e);
     } finally {
@@ -268,10 +312,7 @@ export function ListView({
   const handleRemoveGame = async (providerName: string, gameDisplayName: string) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/list/content');
-      const data = await res.json();
-      const currentContent = data.content || '';
-
+      const currentContent = await getCurrentListContent();
       const lines = currentContent.split(/\r?\n/);
       
       const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
@@ -308,16 +349,7 @@ export function ListView({
       if (targetIndex !== -1) {
         lines.splice(targetIndex, 1);
         const updatedContent = lines.join('\n');
-        
-        await fetch('/api/list/content', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content: updatedContent }),
-        });
-        
-        onRefresh();
+        await persistListContent(updatedContent);
       }
     } catch (e) {
       console.error('Erro ao remover jogo:', e);
@@ -331,10 +363,7 @@ export function ListView({
     try {
       let finalContent = '';
       if (mode === 'delivered') {
-        const res = await fetch('/api/list/content');
-        const data = await res.json();
-        const currentContent = data.content || '';
-
+        const currentContent = await getCurrentListContent();
         const lines = currentContent.split(/\r?\n/);
         const updatedLines: string[] = [];
 
@@ -404,15 +433,8 @@ export function ListView({
         finalContent = cleanedLines.join('\n');
       }
 
-      await fetch('/api/list/content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: finalContent }),
-      });
+      await persistListContent(finalContent);
       setIsClearModalOpen(false);
-      onRefresh();
     } catch (e) {
       console.error('Erro ao limpar lista:', e);
     } finally {
@@ -427,10 +449,7 @@ export function ListView({
 
     setIsSavingMulti(true);
     try {
-      const res = await fetch('/api/list/content');
-      const data = await res.json();
-      const currentContent = data.content || '';
-
+      const currentContent = await getCurrentListContent();
       const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
       const getProviderName = (line: string) => {
         const match = line.match(/^provedor\s*:\s*(.+)$/i);
@@ -545,20 +564,12 @@ export function ListView({
       }
 
       const finalContent = lines.join('\n');
-
-      await fetch('/api/list/content', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: finalContent }),
-      });
+      await persistListContent(finalContent);
 
       setSelectedProviderOption('Sem provedor');
       setCustomProviderInput('');
       setGamesInput('');
       setIsAddModalOpen(false);
-      onRefresh();
     } catch (e) {
       console.error(e);
     } finally {
@@ -658,6 +669,35 @@ export function ListView({
           <span>Exportar Pendentes</span>
         </button>
       </div>
+
+      {/* Connection State Informational Banners */}
+      {!isServerOnline && (
+        <div className="bg-[#ff9f0a]/10 border border-[#ff9f0a]/20 rounded-2xl p-4 flex gap-3 text-left font-sans shadow-lg select-none">
+          <Clock className="w-5 h-5 text-[#ff9f0a] shrink-0 mt-0.5 animate-pulse" />
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black text-white leading-normal">
+              Modo Local Ativo — Servidor Desconectado 💻
+            </h4>
+            <p className="text-[10px] text-zinc-400 font-semibold tracking-wide leading-relaxed">
+              Você pode adicionar, excluir ou editar jogos livremente. O acervo local atualizará em tempo real no seu celular, e as modificações serão enviadas ao computador assim que ele for ligado e reatar conexão!
+            </p>
+          </div>
+        </div>
+      )}
+
+      {hasPendingSync && isServerOnline && (
+        <div className="bg-[#0a84ff]/10 border border-[#0a84ff]/20 rounded-2xl p-4 flex gap-3 text-left font-sans shadow-lg select-none animate-pulse">
+          <RefreshCw className="w-5 h-5 text-[#0a84ff] shrink-0 mt-0.5 animate-spin" />
+          <div className="space-y-0.5">
+            <h4 className="text-xs font-black text-white leading-normal">
+              Sincronizando Alterações com o Servidor... ⏳
+            </h4>
+            <p className="text-[10px] text-zinc-400 font-semibold tracking-wide leading-relaxed">
+              Enviando as alterações feitas recentemente no Modo Offline de volta para o computador.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         <GlassCard className="flex flex-col min-h-[550px] !p-0 overflow-hidden relative shadow-2xl border-white/[0.08]">
