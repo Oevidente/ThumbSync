@@ -1,4 +1,4 @@
-import { Home, Search, Play, Settings, FileText, Archive } from "lucide-react";
+import { Home, Search, Play, Settings, FileText, Archive, Layers } from "lucide-react";
 import { motion } from "motion/react";
 
 interface SidebarProps {
@@ -15,6 +15,7 @@ export function Sidebar({ activeTab, setActiveTab, isServerOnline = true, hasPen
     { id: "progress", icon: Play, label: "Progresso" },
     { id: "list", icon: FileText, label: "Gestão da Lista" },
     { id: "records", icon: Archive, label: "Registros" },
+    { id: "psd", icon: Layers, label: "Projetos PSD" },
     { id: "settings", icon: Settings, label: "Configurações" },
   ];
 

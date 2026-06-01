@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X, CloudLightning, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X, CloudLightning, RefreshCw, CheckCircle2, Layers } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
 import { ListView } from './views/ListView';
 import { RecordsView } from './views/RecordsView';
 import { SettingsView } from './views/SettingsView';
+import { PsdView } from './views/PsdView';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   parseListContentClient,
@@ -260,6 +261,14 @@ export default function App() {
         );
       case 'records':
         return <RecordsView recordsData={analysisData?.recordsData} />;
+      case 'psd':
+        return (
+          <PsdView
+            psdData={analysisData?.psdData}
+            onRefresh={runAnalysis}
+            isLoading={isLoading}
+          />
+        );
       case 'settings':
         return <SettingsView config={config} onSave={fetchConfig} />;
       default:
@@ -283,6 +292,7 @@ export default function App() {
     { id: 'progress', icon: Play, label: 'Progresso' },
     { id: 'list', icon: FileText, label: 'Lista' },
     { id: 'records', icon: Archive, label: 'Registros' },
+    { id: 'psd', icon: Layers, label: 'PSD' },
     { id: 'settings', icon: Settings, label: 'Configs' },
   ];
 

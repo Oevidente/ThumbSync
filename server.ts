@@ -18,13 +18,17 @@ const DEFAULT_DEST = process.platform === 'win32'
 const DEFAULT_GAME_LIST = process.platform === 'win32'
   ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt'
   : path.join(__dirname, 'mock_data', 'lista.txt');
+const DEFAULT_PSD = process.platform === 'win32'
+  ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\PSDs'
+  : path.join(__dirname, 'mock_data', 'psds');
 
 let appConfig = {
   source: DEFAULT_SOURCE,
   dest: DEFAULT_DEST,
   list: DEFAULT_GAME_LIST,
   simulateDates: true,
-  simulateDateMinutesOffset: 1
+  simulateDateMinutesOffset: 1,
+  psd: DEFAULT_PSD
 };
 
 const PENDING_LIST_EXPORT_FILE = 'lista-de-pendentes.txt';
@@ -167,6 +171,188 @@ function collectWebpFiles(rootDir: string) {
   return results;
 }
 
+function collectPsdFiles(rootDir: string) {
+  const results: string[] = [];
+  if (!fs.existsSync(rootDir)) return results;
+  const stack = [rootDir];
+
+  while (stack.length) {
+    const current = stack.pop()!;
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (err) { continue; }
+
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.isFile() && path.extname(entry.name).toLowerCase() === '.psd') {
+        results.push(fullPath);
+      }
+    }
+  }
+  return results;
+}
+
+function collectPsdCatalogData(psdDir: string, sourceDir: string, destDir: string, listPath: string) {
+  const catalogMap = new Map<string, any>();
+
+  // Helper helper to find or create entry
+  const getOrCreateEntry = (providerName: string, gameName: string, displayNameDefault: string) => {
+    const normProv = normalizeProviderName(providerName);
+    const normGame = normalizeGameName(gameName);
+    const key = `${normalizeGameName(normProv)}::${normGame}`;
+    
+    if (catalogMap.has(key)) {
+      return catalogMap.get(key);
+    }
+
+    // See if any entry exists with the same game name under 'Sem provedor' to merge or match elegantly
+    const noProvKey = `${normalizeGameName('Sem provedor')}::${normGame}`;
+    if (catalogMap.has(noProvKey)) {
+      // Move to correct provider if found
+      const entry = catalogMap.get(noProvKey);
+      catalogMap.delete(noProvKey);
+      entry.providerName = normProv;
+      catalogMap.set(key, entry);
+      return entry;
+    }
+
+    // Otherwise create new
+    const newEntry = {
+      id: `${normProv}__${normGame}`,
+      normalizedName: normGame,
+      displayName: displayNameDefault,
+      providerName: normProv,
+      isListed: false,
+      hasPsd: false,
+      psdPath: '',
+      psdSize: 0,
+      psdModifiedAtMs: 0,
+      hasSourceWebp: false,
+      sourceWebpPath: '',
+      hasDestWebp: false,
+      destWebpPath: ''
+    };
+    catalogMap.set(key, newEntry);
+    return newEntry;
+  };
+
+  // 1. Scan lista.txt to populate initial entries
+  if (fs.existsSync(listPath)) {
+    try {
+      const content = fs.readFileSync(listPath, 'utf8');
+      let currentProviderName = 'Sem provedor';
+      content.split(/\r?\n/).forEach(line => {
+        const displayName = cleanGameListLine(line);
+        if (!displayName || displayName.startsWith('#') || displayName.includes('?')) return;
+
+        const providerName = getProviderListName(displayName);
+        if (providerName) {
+          currentProviderName = normalizeProviderName(providerName);
+          return;
+        }
+
+        if (isProviderListLine(displayName)) return;
+
+        const normalized = normalizeGameName(displayName);
+        if (!normalized) return;
+        
+        getOrCreateEntry(currentProviderName, normalized, displayName).isListed = true;
+      });
+    } catch (e) {
+      console.error("Error reading list in PSD scan:", e);
+    }
+  }
+
+  // 2. Scan PSD directory
+  if (fs.existsSync(psdDir)) {
+    const psdFiles = collectPsdFiles(psdDir);
+    psdFiles.forEach(filePath => {
+      const relativePath = path.relative(psdDir, filePath);
+      const fileName = getFileNameFromRelativePath(relativePath);
+      const providerName = getProviderNameFromRelativePath(relativePath);
+      const gameName = path.parse(fileName).name;
+      const stats = getFileStats(filePath);
+
+      const entry = getOrCreateEntry(providerName, gameName, getDisplayNameFromFileName(fileName));
+      entry.hasPsd = true;
+      entry.psdPath = relativePath;
+      if (stats) {
+        entry.psdSize = stats.size;
+        entry.psdModifiedAtMs = stats.mtimeMs;
+      }
+    });
+  }
+
+  // 3. Scan Source directory (WebPs)
+  if (fs.existsSync(sourceDir)) {
+    const sourceFiles = collectWebpFiles(sourceDir);
+    sourceFiles.forEach(filePath => {
+      const relativePath = path.relative(sourceDir, filePath);
+      const fileName = getFileNameFromRelativePath(relativePath);
+      const providerName = getProviderNameFromRelativePath(relativePath);
+      const gameName = path.parse(fileName).name;
+
+      const entry = getOrCreateEntry(providerName, gameName, getDisplayNameFromFileName(fileName));
+      entry.hasSourceWebp = true;
+      entry.sourceWebpPath = relativePath;
+    });
+  }
+
+  // 4. Scan Dest directory (WebPs)
+  if (fs.existsSync(destDir)) {
+    const destFiles = collectWebpFiles(destDir);
+    destFiles.forEach(filePath => {
+      const relativePath = path.relative(destDir, filePath);
+      const fileName = getFileNameFromRelativePath(relativePath);
+      const providerName = getProviderNameFromRelativePath(relativePath);
+      const gameName = path.parse(fileName).name;
+
+      const entry = getOrCreateEntry(providerName, gameName, getDisplayNameFromFileName(fileName));
+      entry.hasDestWebp = true;
+      entry.destWebpPath = relativePath;
+    });
+  }
+
+  // Compile calculations
+  const items = Array.from(catalogMap.values());
+  let totalPsds = 0;
+  let totalWebps = 0;
+  let psdsMatched = 0;
+  let psdsMissingWebp = 0;
+  let webpsMissingPsd = 0;
+  let unlistedAssets = 0;
+
+  items.forEach(item => {
+    if (item.hasPsd) totalPsds++;
+    if (item.hasSourceWebp || item.hasDestWebp) totalWebps++;
+
+    if (item.hasPsd && (item.hasSourceWebp || item.hasDestWebp)) {
+      psdsMatched++;
+    } else if (item.hasPsd && !item.hasSourceWebp && !item.hasDestWebp) {
+      psdsMissingWebp++;
+    } else if (!item.hasPsd && (item.hasSourceWebp || item.hasDestWebp)) {
+      webpsMissingPsd++;
+    }
+
+    if (!item.isListed && (item.hasPsd || item.hasSourceWebp || item.hasDestWebp)) {
+      unlistedAssets++;
+    }
+  });
+
+  return {
+    totalPsds,
+    totalWebps,
+    psdsMatched,
+    psdsMissingWebp,
+    webpsMissingPsd,
+    unlistedAssets,
+    items
+  };
+}
+
 // Ensure mock directories and static mockup lists exist for the browser preview
 function ensureMockDirs() {
   const sourceDir = path.join(__dirname, 'mock_data', 'source');
@@ -220,6 +406,35 @@ Aviator`;
       const pastDate = new Date();
       pastDate.setMinutes(pastDate.getMinutes() - (idx * 15));
       fs.utimesSync(path.join(subDir, name), pastDate, pastDate);
+    });
+  }
+
+  // Create mock PSD files
+  const psdDir = path.join(__dirname, 'mock_data', 'psds');
+  if (!fs.existsSync(psdDir)) fs.mkdirSync(psdDir, { recursive: true });
+
+  const filesInPsd = collectPsdFiles(psdDir);
+  if (filesInPsd.length === 0) {
+    const placeholderBuffer = Buffer.from('RIFF_psd_placeholder_data');
+    const mockPsds = [
+      'Gates of Olympus.psd', 
+      'Sweet Bonanza.psd', 
+      'Fortune Tiger.psd', 
+      'Zeus vs Hades.psd', 
+      'Aviator.psd', 
+      'Midas Golden Touch.psd',
+      'Gates of Olympus 1000.psd', 
+      'Ninja Raccoon.psd'
+    ];
+    mockPsds.forEach((name, idx) => {
+      let subDir = psdDir;
+      if (idx === 0 || idx === 1) {
+        subDir = path.join(psdDir, 'Pragmatic Play');
+      } else if (idx === 2) {
+        subDir = path.join(psdDir, 'PG Soft');
+      }
+      if (!fs.existsSync(subDir)) fs.mkdirSync(subDir, { recursive: true });
+      fs.writeFileSync(path.join(subDir, name), placeholderBuffer);
     });
   }
 }
@@ -568,23 +783,26 @@ async function startServer() {
       dest: appConfig.dest, 
       list: appConfig.list,
       simulateDates: appConfig.simulateDates ?? true,
-      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset ?? 1
+      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset ?? 1,
+      psd: appConfig.psd ?? DEFAULT_PSD
     });
   });
 
   app.post("/api/config", (req, res) => {
-    const { source, dest, list, simulateDates, simulateDateMinutesOffset } = req.body;
+    const { source, dest, list, simulateDates, simulateDateMinutesOffset, psd } = req.body;
     if (source) appConfig.source = source;
     if (dest) appConfig.dest = dest;
     if (list) appConfig.list = list;
     if (simulateDates !== undefined) appConfig.simulateDates = !!simulateDates;
     if (simulateDateMinutesOffset !== undefined) appConfig.simulateDateMinutesOffset = Number(simulateDateMinutesOffset);
+    if (psd) appConfig.psd = psd;
     res.json({ 
       source: appConfig.source, 
       dest: appConfig.dest, 
       list: appConfig.list,
       simulateDates: appConfig.simulateDates,
-      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset
+      simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset,
+      psd: appConfig.psd
     });
   });
 
@@ -684,7 +902,14 @@ async function startServer() {
       }
     }
 
-    res.json({ ...data, gameListData, recordsData });
+    const psdData = collectPsdCatalogData(
+      appConfig.psd ?? DEFAULT_PSD,
+      source,
+      dest,
+      listPath
+    );
+
+    res.json({ ...data, gameListData, recordsData, psdData });
   });
 
   app.post("/api/copy/start", (req, res) => {

@@ -6,6 +6,7 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
   const [source, setSource] = useState("");
   const [dest, setDest] = useState("");
   const [list, setList] = useState("");
+  const [psd, setPsd] = useState("");
   const [simulateDates, setSimulateDates] = useState(true);
   const [simulateDateMinutesOffset, setSimulateDateMinutesOffset] = useState(1);
   const [isSaved, setIsSaved] = useState(false);
@@ -16,6 +17,7 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
       setSource(config.source || "");
       setDest(config.dest || "");
       setList(config.list || "");
+      setPsd(config.psd || "");
       setSimulateDates(config.simulateDates !== undefined ? !!config.simulateDates : true);
       setSimulateDateMinutesOffset(config.simulateDateMinutesOffset !== undefined ? Number(config.simulateDateMinutesOffset) : 1);
     }
@@ -34,6 +36,7 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
           source, 
           dest, 
           list, 
+          psd,
           simulateDates, 
           simulateDateMinutesOffset 
         })
@@ -107,6 +110,18 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
                />
             </div>
 
+            <div className="space-y-2">
+               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans">Diretório de Projetos PSD (Creative Cloud / Photoshop)</label>
+               <input
+                 type="text"
+                 value={psd}
+                 onChange={(e) => setPsd(e.target.value)}
+                 placeholder="Diretório contendo os arquivos editáveis (.psd) dos jogos"
+                 className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/10 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all font-mono"
+                 id="input-psd-dir"
+               />
+            </div>
+
             <div className="border-t border-white/[0.06] pt-6">
                <h4 className="text-sm font-extrabold text-white mb-3.5 flex items-center gap-2">
                  <Calendar className="w-4.5 h-4.5 text-[#0a84ff]" />
@@ -161,7 +176,7 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
             <div className="pt-4 flex justify-end select-none">
                <button 
                  onClick={handleSaveSettings}
-                 disabled={isSaving || !source || !dest || !list}
+                 disabled={isSaving || !source || !dest || !list || !psd}
                  id="btn-save-settings"
                  className="glass-btn-primary"
                >
