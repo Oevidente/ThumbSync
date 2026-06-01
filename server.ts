@@ -286,6 +286,26 @@ function collectPsdCatalogData(psdDir: string, sourceDir: string, destDir: strin
     });
   }
 
+  // Also scan Source (Origem) directory for PSDs, as the user stores PSD files alongside WebPs in the Source directory
+  if (fs.existsSync(sourceDir) && sourceDir !== psdDir) {
+    const sourcePsdFiles = collectPsdFiles(sourceDir);
+    sourcePsdFiles.forEach(filePath => {
+      const relativePath = path.relative(sourceDir, filePath);
+      const fileName = getFileNameFromRelativePath(relativePath);
+      const providerName = getProviderNameFromRelativePath(relativePath);
+      const gameName = path.parse(fileName).name;
+      const stats = getFileStats(filePath);
+
+      const entry = getOrCreateEntry(providerName, gameName, getDisplayNameFromFileName(fileName));
+      entry.hasPsd = true;
+      entry.psdPath = relativePath;
+      if (stats) {
+        entry.psdSize = stats.size;
+        entry.psdModifiedAtMs = stats.mtimeMs;
+      }
+    });
+  }
+
   // 3. Scan Source directory (WebPs)
   if (fs.existsSync(sourceDir)) {
     const sourceFiles = collectWebpFiles(sourceDir);
