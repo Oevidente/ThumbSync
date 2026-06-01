@@ -360,14 +360,13 @@ export default function App() {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`flex flex-col items-center justify-center flex-1 h-full rounded-xl transition-all relative ${
+              title={item.label}
+              aria-label={item.label}
+              className={`flex items-center justify-center flex-1 h-full rounded-xl transition-all relative ${
                 isActive ? 'text-[#0a84ff]' : 'text-zinc-500 hover:text-white'
               }`}
             >
-              <item.icon className={`w-[19px] h-[19px] transition-transform ${isActive ? 'text-[#0a84ff] drop-shadow-[0_0_12px_rgba(10,132,255,0.7)] scale-110' : 'text-zinc-500'}`} />
-              <span className="text-[9px] font-extrabold mt-1 tracking-wide uppercase">
-                {item.label}
-              </span>
+              <item.icon className={`w-[20px] h-[20px] transition-transform ${isActive ? 'text-[#0a84ff] drop-shadow-[0_0_12px_rgba(10,132,255,0.7)] scale-110' : 'text-zinc-500'}`} />
             </button>
           );
         })}
