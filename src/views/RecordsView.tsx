@@ -1373,7 +1373,8 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
                 {sortOrder === "newest" ? "Mais recentes primeiro" : "Mais antigos primeiro"}
               </p>
             </div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full min-w-[860px] text-left text-sm">
                 <thead className="bg-white/[0.03] text-gray-400 uppercase text-[10px] tracking-widest border-b border-white/5">
                   <tr>
@@ -1403,6 +1404,49 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
               </table>
               {visibleGames.length === 0 && (
                 <div className="p-16 text-center text-gray-500">Nenhum jogo encontrado para o filtro atual.</div>
+              )}
+            </div>
+
+            {/* Mobile Cards List View */}
+            <div className="md:hidden divide-y divide-white/5">
+              {visibleGames.map((game) => (
+                <div key={game.destPath} className="p-4 flex flex-col gap-3 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <h4 className="font-bold text-white text-sm tracking-tight leading-snug">
+                      {game.displayName}
+                    </h4>
+                    <span className="shrink-0 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-md bg-white/[0.08] text-gray-300">
+                      {formatSize(game.sizeBytes)}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Clock className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate">{formatDate(game.modifiedAtMs)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0 justify-end font-medium">
+                      <Package className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+                      <span className="truncate uppercase text-[10px] tracking-wider text-fluent-accent">
+                        {game.extension || "WEBP"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg bg-black/20 border border-white/[0.05] p-2.5 space-y-2">
+                    <div className="text-[11px] font-mono break-all select-all flex flex-col">
+                      <span className="text-zinc-500 text-[9px] uppercase tracking-wider font-bold mb-0.5">Arquivo</span>
+                      <span className="text-zinc-300 font-medium leading-normal">{game.fileName}</span>
+                    </div>
+                    <div className="text-[10px] font-mono break-all select-all flex flex-col pt-1.5 border-t border-white/[0.03]">
+                      <span className="text-zinc-500 text-[9px] uppercase tracking-wider font-bold mb-0.5">Caminho</span>
+                      <span className="text-zinc-400 leading-normal">{game.relativePath}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {visibleGames.length === 0 && (
+                <div className="p-10 text-center text-gray-500 text-sm">Nenhum jogo encontrado para o filtro atual.</div>
               )}
             </div>
           </GlassCard>
