@@ -966,6 +966,196 @@ async function startServer() {
     res.json({ status: "stopped" });
   });
 
+  // Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe)
+  interface GameEntry {
+    displayName: string;
+    normalized: string;
+  }
+
+  interface ProviderBlock {
+    providerName: string;
+    games: GameEntry[];
+  }
+
+  function parseListToBlocks(content: string): ProviderBlock[] {
+    const blocks: ProviderBlock[] = [];
+    let currentProvider = "Sem provedor";
+    let currentGames: GameEntry[] = [];
+
+    const lines = content.split(/\r?\n/);
+    for (const line of lines) {
+      const cleanLine = line.replace(/^\uFEFF/, '').trim();
+      if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+        continue;
+      }
+
+      const match = cleanLine.match(/^provedor\s*:\s*(.+)$/i);
+      if (match) {
+        if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
+          blocks.push({ providerName: currentProvider, games: currentGames });
+        }
+        currentProvider = match[1].trim() || "Sem provedor";
+        currentGames = [];
+        continue;
+      }
+
+      if (/^provedor\s*:/i.test(cleanLine)) {
+        continue;
+      }
+
+      const normalized = cleanLine.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\.webp$/i, '')
+        .replace(/:/g, '')
+        .replace(/[_-]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+
+      if (normalized) {
+        currentGames.push({ displayName: cleanLine, normalized });
+      }
+    }
+
+    if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
+      blocks.push({ providerName: currentProvider, games: currentGames });
+    }
+
+    return blocks;
+  }
+
+  function blocksToString(blocks: ProviderBlock[]): string {
+    const lines: string[] = [];
+    blocks.forEach((block, idx) => {
+      if (block.games.length === 0 && block.providerName === "Sem provedor") {
+        return; 
+      }
+      if (idx > 0) {
+        lines.push("");
+      }
+      lines.push(`Provedor: ${block.providerName}`);
+      block.games.forEach(g => {
+        lines.push(g.displayName);
+      });
+    });
+    return lines.join("\n");
+  }
+
+  function mergeThreeWay(baseContent: string, clientContent: string, serverContent: string): string {
+    const baseBlocks = parseListToBlocks(baseContent);
+    const clientBlocks = parseListToBlocks(clientContent);
+    const serverBlocks = parseListToBlocks(serverContent);
+
+    const providerNames = new Map<string, string>();
+    const registerProviderName = (name: string) => {
+      const key = name.toLowerCase().trim();
+      if (!providerNames.has(key)) {
+        providerNames.set(key, name);
+      }
+    };
+
+    baseBlocks.forEach(b => registerProviderName(b.providerName));
+    clientBlocks.forEach(b => registerProviderName(b.providerName));
+    serverBlocks.forEach(b => registerProviderName(b.providerName));
+
+    const gameDisplayNames = new Map<string, string>();
+    const registerGameDisplayName = (provKey: string, normGame: string, dispName: string) => {
+      const key = `${provKey}::${normGame}`;
+      if (!gameDisplayNames.has(key)) {
+        gameDisplayNames.set(key, dispName);
+      }
+    };
+
+    baseBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+    clientBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+    serverBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+
+    const baseKeys = new Set<string>();
+    baseBlocks.forEach(b => {
+      const pk = b.providerName.toLowerCase().trim();
+      b.games.forEach(g => baseKeys.add(`${pk}::${g.normalized}`));
+    });
+
+    const clientKeys = new Set<string>();
+    clientBlocks.forEach(b => {
+      const pk = b.providerName.toLowerCase().trim();
+      b.games.forEach(g => clientKeys.add(`${pk}::${g.normalized}`));
+    });
+
+    const serverKeys = new Set<string>();
+    serverBlocks.forEach(b => {
+      const pk = b.providerName.toLowerCase().trim();
+      b.games.forEach(g => serverKeys.add(`${pk}::${g.normalized}`));
+    });
+
+    const clientAdded = new Set<string>();
+    clientKeys.forEach(key => {
+      if (!baseKeys.has(key)) {
+        clientAdded.add(key);
+      }
+    });
+
+    const clientDeleted = new Set<string>();
+    baseKeys.forEach(key => {
+      if (!clientKeys.has(key)) {
+        clientDeleted.add(key);
+      }
+    });
+
+    const finalKeys = new Set<string>(serverKeys);
+
+    clientAdded.forEach(key => {
+      finalKeys.add(key);
+    });
+
+    clientDeleted.forEach(key => {
+      finalKeys.delete(key);
+    });
+
+    const providerGroups = new Map<string, Set<string>>();
+    finalKeys.forEach(compositeKey => {
+      const parts = compositeKey.split("::");
+      const provKey = parts[0];
+      const gameNorm = parts[1];
+      
+      let group = providerGroups.get(provKey);
+      if (!group) {
+        group = new Set<string>();
+        providerGroups.set(provKey, group);
+      }
+      group.add(gameNorm);
+    });
+
+    const finalBlocks: ProviderBlock[] = [];
+
+    const allProvKeys = Array.from(providerGroups.keys()).sort((a, b) => {
+      if (a === "sem provedor") return 1;
+      if (b === "sem provedor") return -1;
+      return a.localeCompare(b);
+    });
+
+    allProvKeys.forEach(provKey => {
+      const actualProvName = providerNames.get(provKey) || provKey;
+      const gameNorms = providerGroups.get(provKey)!;
+      const gamesList: GameEntry[] = [];
+      
+      const sortedGameNorms = Array.from(gameNorms).sort((ga, gb) => {
+        const nameA = gameDisplayNames.get(`${provKey}::${ga}`) || ga;
+        const nameB = gameDisplayNames.get(`${provKey}::${gb}`) || gb;
+        return nameA.localeCompare(nameB, 'pt-BR');
+      });
+
+      sortedGameNorms.forEach(gn => {
+        const disp = gameDisplayNames.get(`${provKey}::${gn}`) || gn;
+        gamesList.push({ displayName: disp, normalized: gn });
+      });
+
+      finalBlocks.push({ providerName: actualProvName, games: gamesList });
+    });
+
+    return blocksToString(finalBlocks);
+  }
+
   app.get("/api/list/content", (req, res) => {
     const listPath = (req.query.list as string) || appConfig.list;
     if (!fs.existsSync(listPath)) {
@@ -981,12 +1171,22 @@ async function startServer() {
 
   app.post("/api/list/content", (req, res) => {
     const listPath = (req.query.list as string) || appConfig.list;
-    const { content } = req.body;
+    const { content, base } = req.body;
     try {
         const destFolder = path.dirname(listPath);
         if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
-        fs.writeFileSync(listPath, content, 'utf8');
-        res.json({ status: "success" });
+
+        let finalContent = content;
+        if (typeof base === "string") {
+          let serverContent = "";
+          if (fs.existsSync(listPath)) {
+            serverContent = fs.readFileSync(listPath, "utf8");
+          }
+          finalContent = mergeThreeWay(base, content, serverContent);
+        }
+
+        fs.writeFileSync(listPath, finalContent, "utf8");
+        res.json({ status: "success", mergedContent: finalContent });
     } catch (err) {
         res.status(500).json({ error: (err as Error).message });
     }

@@ -169,13 +169,14 @@ export default function App() {
     if (!pendingContent) return;
 
     setSyncingOfflineChanges(true);
+    const base = localStorage.getItem('thumbsync_list_server_stable') || '';
     try {
       const res = await fetch('/api/list/content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: pendingContent }),
+        body: JSON.stringify({ content: pendingContent, base }),
       });
 
       if (res.ok) {

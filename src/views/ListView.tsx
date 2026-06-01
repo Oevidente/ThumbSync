@@ -268,12 +268,13 @@ export function ListView({
       return;
     }
     try {
+      const base = localStorage.getItem('thumbsync_list_server_stable') || '';
       const res = await fetch('/api/list/content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content: updatedContent }),
+        body: JSON.stringify({ content: updatedContent, base }),
       });
       if (!res.ok) throw new Error();
       onRefresh();
