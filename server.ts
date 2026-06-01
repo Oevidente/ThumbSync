@@ -966,6 +966,20 @@ async function startServer() {
     res.json({ status: "stopped" });
   });
 
+  app.post("/api/copy/finalize", (req, res) => {
+    if (currentCopyState) {
+        currentCopyState.status = 'finished';
+        currentCopyState.progress = 100;
+        currentCopyState.nextCopyAt = 0;
+        currentCopyState.currentFileWaiting = null;
+    }
+    if (watchInterval) {
+        clearInterval(watchInterval);
+        watchInterval = null;
+    }
+    res.json(currentCopyState || { status: 'idle' });
+  });
+
   // Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe)
   interface GameEntry {
     displayName: string;

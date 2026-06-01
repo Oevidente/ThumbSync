@@ -168,13 +168,19 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
   };
 
   const stopProcess = async () => {
+    if (!window.confirm("Tem certeza que deseja interromper o processo atual? O relatório de itens copiados nesta sessão será descartado.")) {
+      return;
+    }
     await fetch('/api/copy/stop', { method: 'POST' });
+  };
+
+  const finalizeProcess = async () => {
+    await fetch('/api/copy/finalize', { method: 'POST' });
   };
 
   const openWhatsApp = () => {
     if (!status.copiedNames || status.copiedNames.length === 0) return;
-    const dateStr = new Date().toLocaleString('pt-BR');
-    const message = `Estão feitos (${dateStr}):\n${status.copiedNames.join('\n')}`;
+    const message = `Estão feitos:\n${status.copiedNames.join('\n')}`;
     const url = `whatsapp://send?phone=558198651733&text=${encodeURIComponent(message)}`;
     window.location.href = url;
   };
@@ -427,13 +433,22 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
             </div>
 
             {isRunning ? (
-              <button
-                onClick={stopProcess}
-                className="w-full py-3.5 rounded-xl bg-red-600/10 hover:bg-red-650/20 text-red-400 border border-red-500/30 hover:border-red-500/40 hover:shadow-[0_4px_16px_rgba(239,68,68,0.2)] transition-all flex items-center justify-center gap-2 font-bold cursor-pointer"
-              >
-                <Square className="w-4 h-4 fill-current animate-pulse" />
-                Interromper Processo
-              </button>
+              <div className="space-y-2.5">
+                <button
+                  onClick={finalizeProcess}
+                  className="w-full py-3.5 rounded-xl bg-[#30d158] hover:bg-[#28b34b] text-white hover:shadow-[0_4px_16px_rgba(48,209,88,0.35)] transition-all flex items-center justify-center gap-2 font-bold cursor-pointer active:scale-98"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  Finalizar Processo
+                </button>
+                <button
+                  onClick={stopProcess}
+                  className="w-full py-2.5 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-500/15 hover:border-red-500/30 transition-all flex items-center justify-center gap-2 text-xs font-bold cursor-pointer active:scale-98"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                  Interromper (Descartar Relatório)
+                </button>
+              </div>
             ) : (
               <button
                 disabled={
@@ -540,7 +555,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                 </div>
               </div>
 
-              {isFinished && currentMode !== 'watch' && (
+              {isFinished && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -548,10 +563,12 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                 >
                   <CheckCircle className="w-10 h-10 text-[#30d158] mx-auto mb-3" />
                   <h4 className="text-base font-extrabold text-white mb-1.5">
-                    Lote Finalizado com Sucesso
+                    {currentMode === 'watch' ? 'Standby Finalizado' : 'Lote Finalizado com Sucesso'}
                   </h4>
                   <p className="text-xs text-zinc-400 leading-relaxed mb-5 max-w-[340px] mx-auto">
-                    Todos os arquivos do lote foram sincronizados perfeitamente com os caminhos corretos.
+                    {currentMode === 'watch'
+                      ? 'Processo standby finalizado. Você agora pode enviar o relatório de arquivos copiados para o WhatsApp.'
+                      : 'Todos os arquivos do lote foram sincronizados perfeitamente com os caminhos corretos.'}
                   </p>
                   <button
                     onClick={openWhatsApp}
