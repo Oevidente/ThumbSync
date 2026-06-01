@@ -146,7 +146,7 @@ export function PsdView({ psdData, onRefresh, isLoading = false }: PsdViewProps)
             Catálogo de Projetos PSD
           </h1>
           <p className="text-xs md:text-sm text-zinc-400 font-medium">
-            Mapeie o vínculo entre os templates editáveis em Photoshop (<span className="text-[#0a84ff] font-semibold">.PSD</span>) e as exportações em imagem (<span className="text-[#30d158] font-semibold">.WebP</span>).
+            Mapeie o vínculo entre os templates editáveis locais (<span className="text-[#0a84ff] font-semibold">.PSD</span>) e as imagens exportadas na <span className="text-[#30d158] font-semibold">Origem</span>. Projetos em PSD são catalogados localmente para não sobrecarregar o drive externo do site.
           </p>
         </div>
 
@@ -210,7 +210,7 @@ export function PsdView({ psdData, onRefresh, isLoading = false }: PsdViewProps)
           </div>
           <div className="mt-4 flex items-center gap-1.5 text-[11px] text-[#ff453a] font-medium leading-none">
             <AlertTriangle className="w-3.5 h-3.5" />
-            <span>Imagem no drive, sem arquivo de edição</span>
+            <span>Imagem exportada na Origem sem o .PSD correspondente</span>
           </div>
         </div>
 
@@ -369,8 +369,8 @@ export function PsdView({ psdData, onRefresh, isLoading = false }: PsdViewProps)
                   return {
                     border: 'border-[#ff453a]/15 bg-[#ff453a]/[0.01]',
                     badge: 'bg-[#ff453a]/10 text-[#ff453a] border border-[#ff453a]/25',
-                    label: 'Sem Editável (Orfã)',
-                    desc: 'A imagem webp existe, mas o arquivo original .psd do Photoshop está ausente.'
+                    label: 'Sem Editável (Órfã)',
+                    desc: 'A imagem .webp existe, mas o arquivo editável original .psd está ausente na Origem local.'
                   };
                 }
                 if (!item.isListed) {
