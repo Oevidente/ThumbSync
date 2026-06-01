@@ -681,7 +681,7 @@ export function RecordsView({ recordsData }: { recordsData: any }) {
   const [selectedProviderKey, setSelectedProviderKey] = useState<string | null>(null);
   const [providerFilter, setProviderFilter] = useState("");
   const [gameFilter, setGameFilter] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>("gallery");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
 
   // Custom Logos Client-Side persistence state
