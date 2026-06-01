@@ -19,7 +19,7 @@ const DEFAULT_GAME_LIST = process.platform === 'win32'
   ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt'
   : path.join(__dirname, 'mock_data', 'lista.txt');
 const DEFAULT_PSD = process.platform === 'win32'
-  ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\PSDs'
+  ? DEFAULT_SOURCE
   : path.join(__dirname, 'mock_data', 'psds');
 
 let appConfig = {
