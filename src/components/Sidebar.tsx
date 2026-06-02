@@ -1,4 +1,4 @@
-import { Home, Search, Play, Settings, FileText, Archive, Layers } from "lucide-react";
+import { Download, Home, Search, Play, Settings, FileText, Archive, Layers } from "lucide-react";
 import { motion } from "motion/react";
 
 interface SidebarProps {
@@ -6,9 +6,11 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   isServerOnline?: boolean;
   hasPendingSync?: boolean;
+  canInstall?: boolean;
+  onInstallClick?: () => void;
 }
 
-export function Sidebar({ activeTab, setActiveTab, isServerOnline = true, hasPendingSync = false }: SidebarProps) {
+export function Sidebar({ activeTab, setActiveTab, isServerOnline = true, hasPendingSync = false, canInstall = false, onInstallClick }: SidebarProps) {
   const menuItems = [
     { id: "dashboard", icon: Home, label: "Visão Geral" },
     { id: "analyzer", icon: Search, label: "Analisador" },
@@ -59,6 +61,15 @@ export function Sidebar({ activeTab, setActiveTab, isServerOnline = true, hasPen
       </nav>
       
       <div className="mt-auto px-2 py-4 flex flex-col gap-2 font-sans select-none border-t border-white/[0.04] pt-4">
+        {canInstall && (
+          <button
+            onClick={onInstallClick}
+            className="w-full flex items-center justify-center gap-2 mb-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#0a84ff] to-[#0071e3] text-white text-sm font-bold shadow-[0_0_15px_rgba(10,132,255,0.4)] cursor-pointer active:scale-95 transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span>Instalar PWA</span>
+          </button>
+        )}
         <div className="text-[10px] uppercase tracking-widest text-[#8a8a93] font-bold flex items-center gap-2">
           {isServerOnline ? (
             <>

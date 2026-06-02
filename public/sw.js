@@ -1,10 +1,10 @@
-const CACHE_NAME = 'thumbsync-cache-v1';
+const CACHE_NAME = 'thumbsync-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/icon-192.png',
   '/icon-512.png',
-  '/manifest.webmanifest',
+  '/manifest.json',
   '/logodosite.jpg',
   '/favicon.png'
 ];
@@ -65,7 +65,7 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // Fallback dinâmico opcional se aplicável
+          return new Response('Offline and not in cache', { status: 503, statusText: 'Service Unavailable' });
         });
       })
   );

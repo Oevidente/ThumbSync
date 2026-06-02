@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X, CloudLightning, RefreshCw, CheckCircle2, Layers } from 'lucide-react';
+import { Download, Home, Search, Play, FileText, Archive, Settings, Maximize, Minimize, Share2, Plus, X, CloudLightning, RefreshCw, CheckCircle2, Layers } from 'lucide-react';
 import { Dashboard } from './views/Dashboard';
 import { Analyzer } from './views/Analyzer';
 import { ProgressView } from './views/ProgressView';
@@ -63,7 +63,26 @@ export default function App() {
     }
   }, [inAppNotification]);
 
-  // Monitor list changes and trigger chime / browser push / in-app glass overlay
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    }
+  };
   useEffect(() => {
     if (!analysisData?.gameListData) return;
 
@@ -463,6 +482,8 @@ export default function App() {
         setActiveTab={setActiveTab} 
         isServerOnline={isServerOnline}
         hasPendingSync={hasPendingSync}
+        canInstall={!!deferredPrompt}
+        onInstallClick={handleInstallPWA}
       />
 
       {/* Mobile Sticky Header */}
@@ -476,6 +497,14 @@ export default function App() {
           <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
         <div className="flex items-center gap-2.5">
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallPWA}
+              className="px-3 py-1.5 rounded-full bg-[#0a84ff]/20 text-[#0a84ff] text-xs font-bold font-sans border border-[#0a84ff]/30 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+            >
+              <Download className="w-3.5 h-3.5 mr-1" /> App
+            </button>
+          )}
           <div className="text-[10px] font-black text-[#0a84ff] uppercase bg-[#0a84ff]/10 border border-[#0a84ff]/15 px-2.5 py-1 rounded-full tracking-wider font-sans">
             {menuItems.find(item => item.id === activeTab)?.label}
           </div>
