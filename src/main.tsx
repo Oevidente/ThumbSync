@@ -12,7 +12,7 @@ createRoot(document.getElementById('root')!).render(
 // Registro do Service Worker para PWA (instalável no celular)
 if ('serviceWorker' in navigator) {
   const registerSW = () => {
-    navigator.serviceWorker.register('sw.js')
+    navigator.serviceWorker.register('/sw.js')
       .then((reg) => console.log('Service Worker registrado com sucesso:', reg.scope))
       .catch((err) => console.error('Erro ao registrar o Service Worker:', err));
   };
