@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react";
 import { GlassCard } from "../components/GlassCard.tsx";
-import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert, Bell, Volume2 } from "lucide-react";
+import { playChimeSound, requestNotificationPermission, triggerNativeNotification } from "../utils/notificationSystem";
 
-export function SettingsView({ config, onSave }: { config: any, onSave: () => void }) {
+export function SettingsView({ 
+  config, 
+  onSave,
+  notificationPermission,
+  setNotificationPermission
+}: { 
+  config: any; 
+  onSave: () => void;
+  notificationPermission: NotificationPermission;
+  setNotificationPermission: (perm: NotificationPermission) => void;
+}) {
   const [source, setSource] = useState("");
   const [dest, setDest] = useState("");
   const [list, setList] = useState("");
@@ -51,6 +62,39 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleRequestPermission() {
+    const newPerm = await requestNotificationPermission();
+    if (setNotificationPermission) {
+      setNotificationPermission(newPerm);
+    }
+    playChimeSound();
+    if (newPerm === 'granted') {
+      triggerNativeNotification(
+        "Notificações Ativadas! 🎉",
+        "ThumbSync agora está autorizado a enviar atualizações do catálogo."
+      );
+    }
+  }
+
+  function handleTestNotification() {
+    playChimeSound();
+    
+    // Attempt triggering native push
+    triggerNativeNotification(
+      "Notificação de Teste 🔔",
+      "Sua central de alertas sonoros e notificações de lista do ThumbSync está configurada com sucesso!"
+    );
+    
+    // Emit custom event to trigger custom Apple-style in-app banner fallback in App.tsx
+    const event = new CustomEvent('thumbsync-show-notification', {
+      detail: {
+        title: "Notificação de Teste 🔔",
+        body: "Sua central de alertas sonoros e notificações de lista do ThumbSync está configurada com sucesso!"
+      }
+    });
+    window.dispatchEvent(event);
   }
 
   return (
@@ -286,6 +330,93 @@ export function SettingsView({ config, onSave }: { config: any, onSave: () => vo
                   <p className="text-[11px] text-zinc-400 pl-7 leading-relaxed font-semibold">
                     Caso queira uma solução sem fios e sem configurações no navegador, você pode acionar serviços gratuitos de tunelamento no terminal do computador, exemplo: <code className="text-zinc-200 font-mono bg-white/5 px-1 px-1 rounded">npx localtunnel --port 3000</code> ou <code className="text-zinc-200 font-mono bg-white/5 px-1 rounded">ngrok http 3000</code>. Eles fornecem um link HTTPS público único e criptografado que roda diretamente e permite a instalação transparente de qualquer dispositivo móvel.
                   </p>
+                </div>
+             </div>
+          </div>
+       </GlassCard>
+
+       {/* Notifications & Sound Effects Control Card */}
+       <GlassCard className="max-w-2xl shadow-2xl border-white/[0.05]">
+          <h3 className="text-base md:text-lg font-extrabold text-white mb-2.5 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-[#0a84ff]" />
+            Notificações & Central de Som
+          </h3>
+          <p className="text-xs text-zinc-450 mb-5 font-semibold leading-relaxed">
+            Configure e teste os avisos sonoros e notificações push do sistema para monitoramento do catálogo.
+          </p>
+
+          <div className="space-y-5">
+             {/* Permission State Indicator */}
+             <div className="bg-white/[0.012] border border-white/[0.05] rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                   <span className="text-[10px] uppercase tracking-wider text-zinc-550 font-bold block">Status no Navegador</span>
+                   <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                      {notificationPermission === 'granted' ? (
+                         <span className="text-[#30d158] font-bold flex items-center gap-1.5">
+                            <ShieldCheck className="w-4.5 h-4.5" /> Ativo / Autorizado ✓
+                         </span>
+                      ) : notificationPermission === 'denied' ? (
+                         <span className="text-[#ff453a] font-bold flex items-center gap-1.5">
+                            <ShieldAlert className="w-4.5 h-4.5" /> Bloqueado no Navegador ⚠️
+                         </span>
+                      ) : (
+                         <span className="text-zinc-400 font-bold flex items-center gap-1.5">
+                            <Clock className="w-4.5 h-4.5" /> Não Configurado / Padrão
+                         </span>
+                      )}
+                   </div>
+                   <p className="text-[10px] text-zinc-500 leading-relaxed font-semibold mt-1">
+                      {notificationPermission === 'granted'
+                         ? "As notificações nativas do Windows/Android estão autorizadas e enviarão balões no seu sistema."
+                         : notificationPermission === 'denied'
+                            ? "As notificações estão bloqueadas nas configurações do navegador. Use o banner in-app."
+                            : "As notificações ainda não foram solicitadas. Clique ao lado para ativar o serviço."}
+                   </p>
+                </div>
+
+                {notificationPermission !== 'granted' && (
+                   <button
+                     onClick={handleRequestPermission}
+                     className="glass-btn-primary shrink-0 cursor-pointer rounded-xl font-bold font-sans active:scale-95"
+                     style={{ minHeight: '44px' }}
+                   >
+                      Ativar Notificações
+                   </button>
+                )}
+             </div>
+
+             {/* Test sound & notification banner */}
+             <div className="rounded-2xl bg-white/[0.012] border border-white/[0.05] p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="space-y-1 flex-1">
+                   <h4 className="text-xs font-bold text-zinc-400 flex items-center gap-1.5 uppercase tracking-wider">
+                      <Volume2 className="w-4 h-4 text-[#0a84ff]" />
+                      Sintonia de Feedback Sonoro Mestre
+                   </h4>
+                   <p className="text-[11px] text-zinc-500 leading-relaxed font-semibold max-w-sm mt-1">
+                      Dispara o sino acústico premium e uma notificação simulada para checar os volume dos alto-falantes e o visual do banner.
+                   </p>
+                </div>
+                
+                <button
+                  onClick={handleTestNotification}
+                  className="glass-btn-secondary min-h-[44px] py-2.5 px-4 text-xs font-bold shrink-0 cursor-pointer flex items-center justify-center gap-2 rounded-xl active:scale-95 transition-transform"
+                >
+                   <Volume2 className="w-4 h-4 shrink-0" />
+                   <span>Testar Alarme & Chime</span>
+                </button>
+             </div>
+
+             {/* Dynamic Sandbox Note */}
+             <div className="bg-white/[0.01] border border-white/[0.03] rounded-xl p-4 flex gap-3 text-zinc-500 text-[10px] leading-relaxed">
+                <Info className="w-4.5 h-4.5 text-[#0a84ff] shrink-0 mt-0.5" />
+                <div className="space-y-1 font-semibold">
+                   <p className="text-zinc-400 font-bold">Nota sobre Restrições de Sandbox (Ambiente Embutido):</p>
+                   <p>
+                      Por estar sendo visualizado dentro do visualizador integrado do AI Studio, o navegador costuma restringir a emissão de balões de notificações do sistema operacional (Windows/Android). Caso queira testar a notificação real fora do sandbox, abra seu app em uma nova aba ou instale-o como PWA.
+                   </p>
+                   <p className="text-[#0a84ff] font-bold">
+                      ✓ Enquanto isso, o banner premium translúcido integrado na tela ("In-App") e o bipe ("Plim") funcionarão perfeitamente para sua comodidade!
+                   </p>
                 </div>
              </div>
           </div>

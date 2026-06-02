@@ -18,6 +18,12 @@ import {
   clearPendingChangesFlag,
   saveServerStableContent
 } from './utils/offlineSync';
+import {
+  playChimeSound,
+  getNotificationPermissionState,
+  requestNotificationPermission,
+  triggerNativeNotification
+} from './utils/notificationSystem';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -34,6 +40,108 @@ export default function App() {
   const [hasPendingSync, setHasPendingSync] = useState(false);
   const [syncingOfflineChanges, setSyncingOfflineChanges] = useState(false);
   const [showSyncSuccessToast, setShowSyncSuccessToast] = useState(false);
+
+  // Notification states
+  const [inAppNotification, setInAppNotification] = useState<{ title: string; body: string; timestamp: string } | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  
+  // Ref to track game list for updates (detecting additions, deletions, etc.)
+  const prevGamesRef = useRef<{ displayName: string; normalized: string; providerName: string }[] | null>(null);
+
+  // Initialize notification permission state in client
+  useEffect(() => {
+    setNotificationPermission(getNotificationPermissionState());
+  }, []);
+
+  // Dismiss banner automatically after 6 seconds
+  useEffect(() => {
+    if (inAppNotification) {
+      const timer = setTimeout(() => {
+        setInAppNotification(null);
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [inAppNotification]);
+
+  // Monitor list changes and trigger chime / browser push / in-app glass overlay
+  useEffect(() => {
+    if (!analysisData?.gameListData) return;
+
+    // Compile active games list
+    const ready = analysisData.gameListData.readyGames || [];
+    const remaining = analysisData.gameListData.remainingGames || [];
+    const currentGames = [...ready, ...remaining];
+
+    if (prevGamesRef.current === null) {
+      // First baseline load, just record current state to prevent initial greeting spikes
+      prevGamesRef.current = currentGames;
+      return;
+    }
+
+    const prevGames = prevGamesRef.current;
+    
+    // Check item equality by identifying strings
+    const serializeGame = (g: any) => `${g.providerName || 'Sem provedor'}::${g.normalized || ''}`;
+    const prevKeys = prevGames.map(serializeGame);
+    const currKeys = currentGames.map(serializeGame);
+
+    const prevSerialized = prevKeys.sort().join('|');
+    const currSerialized = currKeys.sort().join('|');
+
+    if (prevSerialized !== currSerialized) {
+      // Change detected! Let's analyze what specific action happened
+      let title = "Lista de Jogos Atualizada 📝";
+      let body = "O arquivo de controle mestre (lista.txt) foi atualizado no servidor.";
+
+      if (prevGames.length > 0 && currentGames.length === 0) {
+        title = "Lista Esvaziada 🗑️";
+        body = "O catálogo de jogos da lista.txt foi totalmente esvaziado pelo usuário.";
+      } else {
+        const prevSet = new Set(prevKeys);
+        const addedGames = currentGames.filter(g => !prevSet.has(serializeGame(g)));
+
+        if (addedGames.length > 0) {
+          title = "Novos Itens de Jogos 🆕";
+          const names = addedGames.map(g => g.displayName);
+          const preview = names.slice(0, 3).join(", ");
+          const suffix = names.length > 3 ? ` e mais ${names.length - 3}...` : "";
+          body = names.length === 1
+            ? `O jogo "${names[0]}" foi adicionado à lista.`
+            : `${names.length} novos itens adicionados: ${preview}${suffix}`;
+        } else {
+          // Check for removals
+          const currSet = new Set(currKeys);
+          const removedGames = prevGames.filter(g => !currSet.has(serializeGame(g)));
+
+          if (removedGames.length > 0) {
+            title = "Itens Removidos da Lista 🗑️";
+            const names = removedGames.map(g => g.displayName);
+            const preview = names.slice(0, 3).join(", ");
+            const suffix = names.length > 3 ? ` e mais ${names.length - 3}...` : "";
+            body = names.length === 1
+              ? `O jogo "${names[0]}" foi retirado do acervo.`
+              : `${names.length} títulos de jogos apagados: ${preview}${suffix}`;
+          }
+        }
+      }
+
+      // 1. Play sweet synth chime "plim" immediately
+      playChimeSound();
+
+      // 2. Trigger native OS push notification
+      triggerNativeNotification(title, body);
+
+      // 3. Display beautiful in-app Apple glass toast banner
+      setInAppNotification({
+        title,
+        body,
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+
+      // Align baseline state
+      prevGamesRef.current = currentGames;
+    }
+  }, [analysisData?.gameListData]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -270,7 +378,14 @@ export default function App() {
           />
         );
       case 'settings':
-        return <SettingsView config={config} onSave={fetchConfig} />;
+        return (
+          <SettingsView 
+            config={config} 
+            onSave={fetchConfig} 
+            notificationPermission={notificationPermission}
+            setNotificationPermission={setNotificationPermission}
+          />
+        );
       default:
         return (
           <Dashboard
@@ -446,7 +561,7 @@ export default function App() {
             className="fixed top-20 right-6 z-[100] max-w-sm w-full bg-[#1c1c1e]/90 backdrop-blur-xl border border-emerald-500/20 shadow-2xl rounded-2xl p-4 flex items-center gap-3.5 select-none text-white font-sans text-left"
           >
             <div className="w-[38px] h-[38px] overflow-hidden rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="text-xs font-black tracking-wide leading-normal">
@@ -456,6 +571,48 @@ export default function App() {
                 Alterações da lista enviadas ao servidor.
               </p>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 2026 Apple-style Premium Glass Notification Banner overlay */}
+      <AnimatePresence>
+        {inAppNotification && (
+          <motion.div
+            initial={{ opacity: 0, y: -40, scale: 0.94, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, y: -30, scale: 0.94, filter: 'blur(10px)' }}
+            transition={{ type: "spring", damping: 18, stiffness: 120 }}
+            className="fixed top-6 left-4 right-4 md:left-auto md:right-6 md:w-[380px] z-[999] bg-[#161618]/80 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_45px_rgba(0,0,0,0.7)] rounded-2xl p-4 flex items-start gap-3.5 select-none font-sans text-white"
+          >
+            <div className="w-[38px] h-[38px] shrink-0 overflow-hidden rounded-xl bg-[#0a84ff]/10 border border-[#0a84ff]/20 flex items-center justify-center">
+              <img 
+                src="./logodosite.jpg" 
+                alt="Logo" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            <div className="min-w-0 flex-1 space-y-1 text-left">
+              <div className="flex items-center justify-between gap-1.5">
+                <h4 className="text-xs font-extrabold text-white tracking-tight truncate">
+                  {inAppNotification.title}
+                </h4>
+                <span className="text-[9px] font-bold text-zinc-500 shrink-0 font-mono">
+                  {inAppNotification.timestamp}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-300 leading-relaxed font-semibold">
+                {inAppNotification.body}
+              </p>
+            </div>
+
+            <button
+              onClick={() => setInAppNotification(null)}
+              className="p-1 rounded-full hover:bg-white/5 text-zinc-400 hover:text-white shrink-0 active:scale-90 transition-transform cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
