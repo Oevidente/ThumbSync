@@ -6,3 +6,5 @@ coverage/
 *.log
 .env*
 !.env.example
+mock_data/
+list-sync-base.txt
