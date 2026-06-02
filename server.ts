@@ -15,9 +15,320 @@ const DEFAULT_SOURCE = process.platform === 'win32'
 const DEFAULT_DEST = process.platform === 'win32'
   ? 'H:\\Meu Drive\\Thumbs'
   : path.join(__dirname, 'mock_data', 'dest');
+
+// Paths for synced list system
+const DRIVE_LIST_PATH = 'H:\\Meu Drive\\Thumbs\\lista.txt';
+const ADOBE_LIST_PATH = 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt';
+const SYNC_BASE_FILE = path.join(process.cwd(), 'list-sync-base.txt');
+
+// Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe)
+interface GameEntry {
+  displayName: string;
+  normalized: string;
+}
+
+interface ProviderBlock {
+  providerName: string;
+  games: GameEntry[];
+}
+
+function parseListToBlocks(content: string): ProviderBlock[] {
+  const blocks: ProviderBlock[] = [];
+  let currentProvider = "Sem provedor";
+  let currentGames: GameEntry[] = [];
+
+  const lines = content.split(/\r?\n/);
+  for (const line of lines) {
+    const cleanLine = line.replace(/^\uFEFF/, '').trim();
+    if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+      continue;
+    }
+
+    const match = cleanLine.match(/^provedor\s*:\s*(.+)$/i);
+    if (match) {
+      if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
+        blocks.push({ providerName: currentProvider, games: currentGames });
+      }
+      currentProvider = match[1].trim() || "Sem provedor";
+      currentGames = [];
+      continue;
+    }
+
+    if (/^provedor\s*:/i.test(cleanLine)) {
+      continue;
+    }
+
+    const normalized = cleanLine.normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\.webp$/i, '')
+      .replace(/:/g, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+    if (normalized) {
+      currentGames.push({ displayName: cleanLine, normalized });
+    }
+  }
+
+  if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
+    blocks.push({ providerName: currentProvider, games: currentGames });
+  }
+
+  return blocks;
+}
+
+function blocksToString(blocks: ProviderBlock[]): string {
+  const lines: string[] = [];
+  blocks.forEach((block, idx) => {
+    if (block.games.length === 0 && block.providerName === "Sem provedor") {
+      return; 
+    }
+    if (idx > 0) {
+      lines.push("");
+    }
+    lines.push(`Provedor: ${block.providerName}`);
+    block.games.forEach(g => {
+      lines.push(g.displayName);
+    });
+  });
+  return lines.join("\n");
+}
+
+function mergeThreeWay(baseContent: string, clientContent: string, serverContent: string): string {
+  const baseBlocks = parseListToBlocks(baseContent);
+  const clientBlocks = parseListToBlocks(clientContent);
+  const serverBlocks = parseListToBlocks(serverContent);
+
+  const providerNames = new Map<string, string>();
+  const registerProviderName = (name: string) => {
+    const key = name.toLowerCase().trim();
+    if (!providerNames.has(key)) {
+      providerNames.set(key, name);
+    }
+  };
+
+  baseBlocks.forEach(b => registerProviderName(b.providerName));
+  clientBlocks.forEach(b => registerProviderName(b.providerName));
+  serverBlocks.forEach(b => registerProviderName(b.providerName));
+
+  const gameDisplayNames = new Map<string, string>();
+  const registerGameDisplayName = (provKey: string, normGame: string, dispName: string) => {
+    const key = `${provKey}::${normGame}`;
+    if (!gameDisplayNames.has(key)) {
+      gameDisplayNames.set(key, dispName);
+    }
+  };
+
+  baseBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+  clientBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+  serverBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
+
+  const baseKeys = new Set<string>();
+  baseBlocks.forEach(b => {
+    const pk = b.providerName.toLowerCase().trim();
+    b.games.forEach(g => baseKeys.add(`${pk}::${g.normalized}`));
+  });
+
+  const clientKeys = new Set<string>();
+  clientBlocks.forEach(b => {
+    const pk = b.providerName.toLowerCase().trim();
+    b.games.forEach(g => clientKeys.add(`${pk}::${g.normalized}`));
+  });
+
+  const serverKeys = new Set<string>();
+  serverBlocks.forEach(b => {
+    const pk = b.providerName.toLowerCase().trim();
+    b.games.forEach(g => serverKeys.add(`${pk}::${g.normalized}`));
+  });
+
+  const clientAdded = new Set<string>();
+  clientKeys.forEach(key => {
+    if (!baseKeys.has(key)) {
+      clientAdded.add(key);
+    }
+  });
+
+  const clientDeleted = new Set<string>();
+  baseKeys.forEach(key => {
+    if (!clientKeys.has(key)) {
+      clientDeleted.add(key);
+    }
+  });
+
+  const finalKeys = new Set<string>(serverKeys);
+
+  clientAdded.forEach(key => {
+    finalKeys.add(key);
+  });
+
+  clientDeleted.forEach(key => {
+    finalKeys.delete(key);
+  });
+
+  const providerGroups = new Map<string, Set<string>>();
+  finalKeys.forEach(compositeKey => {
+    const parts = compositeKey.split("::");
+    const provKey = parts[0];
+    const gameNorm = parts[1];
+    
+    let group = providerGroups.get(provKey);
+    if (!group) {
+      group = new Set<string>();
+      providerGroups.set(provKey, group);
+    }
+    group.add(gameNorm);
+  });
+
+  const finalBlocks: ProviderBlock[] = [];
+
+  const allProvKeys = Array.from(providerGroups.keys()).sort((a, b) => {
+    if (a === "sem provedor") return 1;
+    if (b === "sem provedor") return -1;
+    return a.localeCompare(b);
+  });
+
+  allProvKeys.forEach(provKey => {
+    const actualProvName = providerNames.get(provKey) || provKey;
+    const gameNorms = providerGroups.get(provKey)!;
+    const gamesList: GameEntry[] = [];
+    
+    const sortedGameNorms = Array.from(gameNorms).sort((ga, gb) => {
+      const nameA = gameDisplayNames.get(`${provKey}::${ga}`) || ga;
+      const nameB = gameDisplayNames.get(`${provKey}::${gb}`) || gb;
+      return nameA.localeCompare(nameB, 'pt-BR');
+    });
+
+    sortedGameNorms.forEach(gn => {
+      const disp = gameDisplayNames.get(`${provKey}::${gn}`) || gn;
+      gamesList.push({ displayName: disp, normalized: gn });
+    });
+
+    finalBlocks.push({ providerName: actualProvName, games: gamesList });
+  });
+
+  return blocksToString(finalBlocks);
+}
+
+function resolveAndSyncList(): string {
+  if (process.platform !== 'win32') {
+    return path.join(__dirname, 'mock_data', 'lista.txt');
+  }
+
+  const driveExists = fs.existsSync(DRIVE_LIST_PATH);
+  const adobeExists = fs.existsSync(ADOBE_LIST_PATH);
+
+  // If both exist, keep them in sync
+  if (driveExists && adobeExists) {
+    try {
+      const driveContent = fs.readFileSync(DRIVE_LIST_PATH, 'utf8');
+      const adobeContent = fs.readFileSync(ADOBE_LIST_PATH, 'utf8');
+
+      if (driveContent !== adobeContent) {
+        let baseContent = '';
+        if (fs.existsSync(SYNC_BASE_FILE)) {
+          baseContent = fs.readFileSync(SYNC_BASE_FILE, 'utf8');
+        } else {
+          // If no base exists, we treat Drive as base or we do merge of both directly
+          baseContent = driveContent;
+        }
+
+        const driveChanged = driveContent !== baseContent;
+        const adobeChanged = adobeContent !== baseContent;
+
+        let finalContent = driveContent;
+        if (driveChanged && !adobeChanged) {
+          // Drive was modified, sync to Adobe
+          finalContent = driveContent;
+          fs.writeFileSync(ADOBE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(SYNC_BASE_FILE, finalContent, 'utf8');
+          console.log('[ListSync] Synced Drive edits to Local (Adobe) list.');
+        } else if (adobeChanged && !driveChanged) {
+          // Adobe was modified, sync to Drive
+          finalContent = adobeContent;
+          fs.writeFileSync(DRIVE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(SYNC_BASE_FILE, finalContent, 'utf8');
+          console.log('[ListSync] Synced Local (Adobe) edits to Drive list.');
+        } else if (driveChanged && adobeChanged) {
+          // Both changed, do 3-way merge
+          finalContent = mergeThreeWay(baseContent, driveContent, adobeContent);
+          fs.writeFileSync(DRIVE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(ADOBE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(SYNC_BASE_FILE, finalContent, 'utf8');
+          console.log('[ListSync] Resolved conflict between Drive and Local (Adobe) with 3-way merge.');
+        } else {
+          // Base was out of sync but files are different (e.g. if base got deleted or corrupted)
+          // Fallback to simple merge or make them equal
+          finalContent = mergeThreeWay(driveContent, driveContent, adobeContent);
+          fs.writeFileSync(DRIVE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(ADOBE_LIST_PATH, finalContent, 'utf8');
+          fs.writeFileSync(SYNC_BASE_FILE, finalContent, 'utf8');
+          console.log('[ListSync] Initialized sync base and aligned different list files.');
+        }
+      } else {
+        // Files are identical, make sure baseContent is also aligned
+        let baseContent = '';
+        if (fs.existsSync(SYNC_BASE_FILE)) {
+          baseContent = fs.readFileSync(SYNC_BASE_FILE, 'utf8');
+        }
+        if (baseContent !== driveContent) {
+          fs.writeFileSync(SYNC_BASE_FILE, driveContent, 'utf8');
+        }
+      }
+    } catch (err) {
+      console.error('[ListSync] Error syncing list files:', err);
+    }
+
+    const selectedPath = DRIVE_LIST_PATH;
+    if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
+    return selectedPath;
+  }
+
+  // If only drive exists, use drive
+  if (driveExists) {
+    try {
+      const driveContent = fs.readFileSync(DRIVE_LIST_PATH, 'utf8');
+      let baseContent = '';
+      if (fs.existsSync(SYNC_BASE_FILE)) {
+        baseContent = fs.readFileSync(SYNC_BASE_FILE, 'utf8');
+      }
+      if (baseContent !== driveContent) {
+        fs.writeFileSync(SYNC_BASE_FILE, driveContent, 'utf8');
+      }
+    } catch (e) {}
+    const selectedPath = DRIVE_LIST_PATH;
+    if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
+    return selectedPath;
+  }
+
+  // If only adobe exists, use adobe
+  if (adobeExists) {
+    try {
+      const adobeContent = fs.readFileSync(ADOBE_LIST_PATH, 'utf8');
+      let baseContent = '';
+      if (fs.existsSync(SYNC_BASE_FILE)) {
+        baseContent = fs.readFileSync(SYNC_BASE_FILE, 'utf8');
+      }
+      if (baseContent !== adobeContent) {
+        fs.writeFileSync(SYNC_BASE_FILE, adobeContent, 'utf8');
+      }
+    } catch (e) {}
+    const selectedPath = ADOBE_LIST_PATH;
+    if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
+    return selectedPath;
+  }
+
+  // If neither exists, point to DRIVE_LIST_PATH as default, so when Drive becomes available it can be picked up
+  const selectedPath = DRIVE_LIST_PATH;
+  if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
+  return selectedPath;
+}
+
 const DEFAULT_GAME_LIST = process.platform === 'win32'
-  ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt'
+  ? DRIVE_LIST_PATH
   : path.join(__dirname, 'mock_data', 'lista.txt');
+
 const DEFAULT_PSD = process.platform === 'win32'
   ? DEFAULT_SOURCE
   : path.join(__dirname, 'mock_data', 'psds');
@@ -798,10 +1109,11 @@ async function startServer() {
   });
 
   app.get("/api/config", (req, res) => {
+    const listPath = resolveAndSyncList();
     res.json({ 
       source: appConfig.source, 
       dest: appConfig.dest, 
-      list: appConfig.list,
+      list: listPath,
       simulateDates: appConfig.simulateDates ?? true,
       simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset ?? 1,
       psd: appConfig.psd ?? DEFAULT_PSD
@@ -816,10 +1128,12 @@ async function startServer() {
     if (simulateDates !== undefined) appConfig.simulateDates = !!simulateDates;
     if (simulateDateMinutesOffset !== undefined) appConfig.simulateDateMinutesOffset = Number(simulateDateMinutesOffset);
     if (psd) appConfig.psd = psd;
+    
+    const listPath = resolveAndSyncList();
     res.json({ 
       source: appConfig.source, 
       dest: appConfig.dest, 
-      list: appConfig.list,
+      list: listPath,
       simulateDates: appConfig.simulateDates,
       simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset,
       psd: appConfig.psd
@@ -829,7 +1143,7 @@ async function startServer() {
   app.get("/api/analyze", (req, res) => {
     const source = (req.query.source as string) || appConfig.source;
     const dest = (req.query.dest as string) || appConfig.dest;
-    const listPath = (req.query.list as string) || appConfig.list;
+    const listPath = (req.query.list as string) || resolveAndSyncList();
 
     const data = collectComparisonData(source, dest);
     const recordsData = collectDestinationRecords(dest);
@@ -1225,198 +1539,10 @@ async function startServer() {
     res.json(currentCopyState || { status: 'idle' });
   });
 
-  // Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe)
-  interface GameEntry {
-    displayName: string;
-    normalized: string;
-  }
-
-  interface ProviderBlock {
-    providerName: string;
-    games: GameEntry[];
-  }
-
-  function parseListToBlocks(content: string): ProviderBlock[] {
-    const blocks: ProviderBlock[] = [];
-    let currentProvider = "Sem provedor";
-    let currentGames: GameEntry[] = [];
-
-    const lines = content.split(/\r?\n/);
-    for (const line of lines) {
-      const cleanLine = line.replace(/^\uFEFF/, '').trim();
-      if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
-        continue;
-      }
-
-      const match = cleanLine.match(/^provedor\s*:\s*(.+)$/i);
-      if (match) {
-        if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
-          blocks.push({ providerName: currentProvider, games: currentGames });
-        }
-        currentProvider = match[1].trim() || "Sem provedor";
-        currentGames = [];
-        continue;
-      }
-
-      if (/^provedor\s*:/i.test(cleanLine)) {
-        continue;
-      }
-
-      const normalized = cleanLine.normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\.webp$/i, '')
-        .replace(/:/g, '')
-        .replace(/[_-]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-
-      if (normalized) {
-        currentGames.push({ displayName: cleanLine, normalized });
-      }
-    }
-
-    if (currentGames.length > 0 || currentProvider !== "Sem provedor") {
-      blocks.push({ providerName: currentProvider, games: currentGames });
-    }
-
-    return blocks;
-  }
-
-  function blocksToString(blocks: ProviderBlock[]): string {
-    const lines: string[] = [];
-    blocks.forEach((block, idx) => {
-      if (block.games.length === 0 && block.providerName === "Sem provedor") {
-        return; 
-      }
-      if (idx > 0) {
-        lines.push("");
-      }
-      lines.push(`Provedor: ${block.providerName}`);
-      block.games.forEach(g => {
-        lines.push(g.displayName);
-      });
-    });
-    return lines.join("\n");
-  }
-
-  function mergeThreeWay(baseContent: string, clientContent: string, serverContent: string): string {
-    const baseBlocks = parseListToBlocks(baseContent);
-    const clientBlocks = parseListToBlocks(clientContent);
-    const serverBlocks = parseListToBlocks(serverContent);
-
-    const providerNames = new Map<string, string>();
-    const registerProviderName = (name: string) => {
-      const key = name.toLowerCase().trim();
-      if (!providerNames.has(key)) {
-        providerNames.set(key, name);
-      }
-    };
-
-    baseBlocks.forEach(b => registerProviderName(b.providerName));
-    clientBlocks.forEach(b => registerProviderName(b.providerName));
-    serverBlocks.forEach(b => registerProviderName(b.providerName));
-
-    const gameDisplayNames = new Map<string, string>();
-    const registerGameDisplayName = (provKey: string, normGame: string, dispName: string) => {
-      const key = `${provKey}::${normGame}`;
-      if (!gameDisplayNames.has(key)) {
-        gameDisplayNames.set(key, dispName);
-      }
-    };
-
-    baseBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
-    clientBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
-    serverBlocks.forEach(b => b.games.forEach(g => registerGameDisplayName(b.providerName.toLowerCase().trim(), g.normalized, g.displayName)));
-
-    const baseKeys = new Set<string>();
-    baseBlocks.forEach(b => {
-      const pk = b.providerName.toLowerCase().trim();
-      b.games.forEach(g => baseKeys.add(`${pk}::${g.normalized}`));
-    });
-
-    const clientKeys = new Set<string>();
-    clientBlocks.forEach(b => {
-      const pk = b.providerName.toLowerCase().trim();
-      b.games.forEach(g => clientKeys.add(`${pk}::${g.normalized}`));
-    });
-
-    const serverKeys = new Set<string>();
-    serverBlocks.forEach(b => {
-      const pk = b.providerName.toLowerCase().trim();
-      b.games.forEach(g => serverKeys.add(`${pk}::${g.normalized}`));
-    });
-
-    const clientAdded = new Set<string>();
-    clientKeys.forEach(key => {
-      if (!baseKeys.has(key)) {
-        clientAdded.add(key);
-      }
-    });
-
-    const clientDeleted = new Set<string>();
-    baseKeys.forEach(key => {
-      if (!clientKeys.has(key)) {
-        clientDeleted.add(key);
-      }
-    });
-
-    const finalKeys = new Set<string>(serverKeys);
-
-    clientAdded.forEach(key => {
-      finalKeys.add(key);
-    });
-
-    clientDeleted.forEach(key => {
-      finalKeys.delete(key);
-    });
-
-    const providerGroups = new Map<string, Set<string>>();
-    finalKeys.forEach(compositeKey => {
-      const parts = compositeKey.split("::");
-      const provKey = parts[0];
-      const gameNorm = parts[1];
-      
-      let group = providerGroups.get(provKey);
-      if (!group) {
-        group = new Set<string>();
-        providerGroups.set(provKey, group);
-      }
-      group.add(gameNorm);
-    });
-
-    const finalBlocks: ProviderBlock[] = [];
-
-    const allProvKeys = Array.from(providerGroups.keys()).sort((a, b) => {
-      if (a === "sem provedor") return 1;
-      if (b === "sem provedor") return -1;
-      return a.localeCompare(b);
-    });
-
-    allProvKeys.forEach(provKey => {
-      const actualProvName = providerNames.get(provKey) || provKey;
-      const gameNorms = providerGroups.get(provKey)!;
-      const gamesList: GameEntry[] = [];
-      
-      const sortedGameNorms = Array.from(gameNorms).sort((ga, gb) => {
-        const nameA = gameDisplayNames.get(`${provKey}::${ga}`) || ga;
-        const nameB = gameDisplayNames.get(`${provKey}::${gb}`) || gb;
-        return nameA.localeCompare(nameB, 'pt-BR');
-      });
-
-      sortedGameNorms.forEach(gn => {
-        const disp = gameDisplayNames.get(`${provKey}::${gn}`) || gn;
-        gamesList.push({ displayName: disp, normalized: gn });
-      });
-
-      finalBlocks.push({ providerName: actualProvName, games: gamesList });
-    });
-
-    return blocksToString(finalBlocks);
-  }
+  // Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe) are now defined at the module level.
 
   app.get("/api/list/content", (req, res) => {
-    const listPath = (req.query.list as string) || appConfig.list;
+    const listPath = (req.query.list as string) || resolveAndSyncList();
     if (!fs.existsSync(listPath)) {
         return res.json({ content: '' });
     }
@@ -1429,7 +1555,7 @@ async function startServer() {
   });
 
   app.post("/api/list/content", (req, res) => {
-    const listPath = (req.query.list as string) || appConfig.list;
+    const listPath = (req.query.list as string) || resolveAndSyncList();
     const { content, base } = req.body;
     try {
         const destFolder = path.dirname(listPath);
@@ -1445,6 +1571,26 @@ async function startServer() {
         }
 
         fs.writeFileSync(listPath, finalContent, "utf8");
+
+        // Also write to both synced paths and sync-base on Windows
+        if (process.platform === 'win32') {
+          try {
+            const driveAvailable = fs.existsSync(path.dirname(DRIVE_LIST_PATH));
+            const adobeAvailable = fs.existsSync(path.dirname(ADOBE_LIST_PATH));
+            
+            if (driveAvailable) {
+              fs.writeFileSync(DRIVE_LIST_PATH, finalContent, "utf8");
+            }
+            if (adobeAvailable) {
+              fs.writeFileSync(ADOBE_LIST_PATH, finalContent, "utf8");
+            }
+            fs.writeFileSync(SYNC_BASE_FILE, finalContent, "utf8");
+            console.log('[ListSave] Unified save completed across Drive, Adobe lists and Sync Base.');
+          } catch (syncErr) {
+            console.error('[ListSave] Sync-on-save error:', syncErr);
+          }
+        }
+
         res.json({ status: "success", mergedContent: finalContent });
     } catch (err) {
         res.status(500).json({ error: (err as Error).message });
