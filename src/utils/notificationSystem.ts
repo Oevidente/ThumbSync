@@ -74,21 +74,44 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 }
 
 // Trigger browser native push notification
-export function triggerNativeNotification(title: string, body: string) {
+export async function triggerNativeNotification(title: string, body: string) {
   if (typeof window === 'undefined' || !('Notification' in window)) return false;
   
   if (Notification.permission === 'granted') {
     try {
+      // Prioritize ServiceWorker registration which is required on Android Chrome
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.ready;
+        if (registration) {
+          await registration.showNotification(title, {
+            body,
+            icon: '/favicon.png', // Ensure this path is correct relative to the root
+            tag: 'thumbsync-list-update',
+            renotify: true,
+            vibrate: [200, 100, 200]
+          });
+          return true;
+        }
+      }
+
+      // Fallback for desktop where new Notification might work natively
       new Notification(title, {
         body,
-        icon: './favicon.png',
+        icon: '/favicon.png',
         tag: 'thumbsync-list-update',
-        renotify: true
+        renotify: true,
+        vibrate: [200, 100, 200]
       } as any);
       return true;
     } catch (err) {
-      console.warn("Browser native Notification constructor failed (common inside non-top-level iframe):", err);
-      return false;
+      console.warn("Browser native Notification failed:", err);
+      // Attempt synchronous fallback if the async failed
+      try {
+        new Notification(title, { body, icon: '/favicon.png' });
+        return true;
+      } catch (e) {
+        return false;
+      }
     }
   }
   return false;
