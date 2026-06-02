@@ -16,6 +16,7 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
+import { playChimeSound, triggerNativeNotification } from "../utils/notificationSystem";
 import {
   getCachedListContent,
   saveLocalListContent,
@@ -260,10 +261,27 @@ export function ListView({
     return getCachedListContent();
   };
 
+  const notifySync = () => {
+    triggerNativeNotification(
+      "Lista Sincronizada",
+      "As alterações na lista de jogos foram salvas com sucesso!"
+    );
+    window.dispatchEvent(
+      new CustomEvent("thumbsync-show-notification", {
+        detail: {
+          title: "Lista Sincronizada 🔄",
+          message: "As alterações foram salvas com sucesso!",
+        },
+      })
+    );
+    playChimeSound();
+  };
+
   const persistListContent = async (updatedContent: string) => {
     if (!isServerOnline) {
       saveLocalListContent(updatedContent, true);
       if (onOfflineListEdit) onOfflineListEdit();
+      notifySync();
       onRefresh();
       return;
     }
@@ -277,11 +295,13 @@ export function ListView({
         body: JSON.stringify({ content: updatedContent, base }),
       });
       if (!res.ok) throw new Error();
+      notifySync();
       onRefresh();
     } catch (e) {
       console.warn("Persistent save error offline queue fallback triggered.", e);
       saveLocalListContent(updatedContent, true);
       if (onOfflineListEdit) onOfflineListEdit();
+      notifySync();
       onRefresh();
     }
   };
