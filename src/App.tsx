@@ -412,10 +412,51 @@ export default function App() {
   ];
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#070709] bg-radial-[at_top_right] from-zinc-900 via-[#070709] to-black text-white relative overflow-x-hidden selection:bg-[#0a84ff]/20 selection:text-white">
-      {/* Decorative ambient light halo (macOS-inspired visual elements) */}
-      <div className="absolute pointer-events-none top-[-25%] right-[-15%] w-[650px] h-[650px] bg-[#0a84ff]/8 rounded-full blur-[140px] z-0" />
-      <div className="absolute pointer-events-none bottom-[-20%] left-[-15%] w-[600px] h-[600px] bg-[#30d158]/5 rounded-full blur-[130px] z-0" />
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#060608] text-white relative overflow-x-hidden selection:bg-[#0a84ff]/20 selection:text-white">
+      {/* Dynamic Animated Organic Liquid Background (Apple Liquid Glass Style) */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-[#060608]">
+        <svg className="absolute w-0 h-0" aria-hidden="true">
+          <defs>
+            <filter id="bg-liquid-filter">
+              <feTurbulence
+                type="fractalNoise"
+                baseFrequency="0.008"
+                numOctaves="2"
+                result="noise"
+              >
+                <animate
+                  attributeName="baseFrequency"
+                  values="0.008;0.012;0.008"
+                  dur="10s"
+                  repeatCount="indefinite"
+                />
+              </feTurbulence>
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="noise"
+                scale="150"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Liquid organic fluid gradients, distorted heavily by the SVG filter */}
+        <div 
+          className="absolute inset-[-20%] opacity-85 transition-opacity duration-1000 ease-in-out"
+          style={{ filter: "url(#bg-liquid-filter) blur(60px)" }}
+        >
+          {/* Asymmetrical fluid color sources pulsating faster like ARGB */}
+          <div className="absolute top-[10%] left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-tr from-[#0a84ff]/[0.5] to-[#15e6cd]/[0.3] mix-blend-screen animate-[drift-blob_12s_ease-in-out_infinite]" />
+          
+          <div className="absolute top-[35%] right-[5%] w-[50vw] h-[50vw] rounded-full bg-[#30d158]/[0.4] mix-blend-screen animate-[drift-blob-reverse_15s_ease-in-out_infinite]" />
+          
+          <div className="absolute bottom-[5%] left-[25%] w-[60vw] h-[60vw] rounded-full bg-[#bf5af2]/[0.4] mix-blend-screen animate-[drift-blob_18s_ease-in-out_infinite_reverse]" />
+          
+          <div className="absolute top-[40%] left-[40%] w-[35vw] h-[35vw] rounded-full bg-[#ff9f0a]/[0.2] mix-blend-screen animate-[drift-blob-reverse_10s_ease-in-out_infinite]" />
+        </div>
+      </div>
 
       <Sidebar 
         activeTab={activeTab} 

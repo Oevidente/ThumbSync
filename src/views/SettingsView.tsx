@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { GlassCard } from "../components/GlassCard.tsx";
-import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert, Bell, Volume2 } from "lucide-react";
+import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert, Bell, Volume2, Droplet, Sparkles, Layers } from "lucide-react";
 import { playChimeSound, requestNotificationPermission, triggerNativeNotification } from "../utils/notificationSystem";
 
 export function SettingsView({ 
@@ -20,6 +20,24 @@ export function SettingsView({
   const [psd, setPsd] = useState("");
   const [simulateDates, setSimulateDates] = useState(true);
   const [simulateDateMinutesOffset, setSimulateDateMinutesOffset] = useState(1);
+  const [liquidGlassEnabled, setLiquidGlassEnabled] = useState(() => {
+    return localStorage.getItem("liquid-glass-enabled") !== "false";
+  });
+  const [liquidGlassIntensity, setLiquidGlassIntensity] = useState(() => {
+    return localStorage.getItem("liquid-glass-intensity") || "medium";
+  });
+
+  const handleToggleLiquidGlass = (enabled: boolean) => {
+    setLiquidGlassEnabled(enabled);
+    localStorage.setItem("liquid-glass-enabled", enabled ? "true" : "false");
+    window.dispatchEvent(new CustomEvent("liquid-glass-settings-updated"));
+  };
+
+  const handleChangeLiquidIntensity = (intensity: string) => {
+    setLiquidGlassIntensity(intensity);
+    localStorage.setItem("liquid-glass-intensity", intensity);
+    window.dispatchEvent(new CustomEvent("liquid-glass-settings-updated"));
+  };
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
