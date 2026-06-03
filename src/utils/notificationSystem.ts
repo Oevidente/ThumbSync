@@ -89,7 +89,7 @@ export async function triggerNativeNotification(title: string, body: string) {
             tag: 'thumbsync-list-update',
             renotify: true,
             vibrate: [200, 100, 200]
-          });
+          } as any);
           return true;
         }
       }

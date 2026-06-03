@@ -11,16 +11,16 @@ const __dirname = path.dirname(__filename);
 
 // --- LOGIC FROM SCRIPTS ---
 
-const DEFAULT_SOURCE = process.platform === 'win32' 
+const DEFAULT_SOURCE = process.env.THUMBSYNC_SOURCE || (process.platform === 'win32' 
   ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\Thumbs'
-  : path.join(__dirname, 'mock_data', 'source');
-const DEFAULT_DEST = process.platform === 'win32'
+  : path.join(__dirname, 'mock_data', 'source'));
+const DEFAULT_DEST = process.env.THUMBSYNC_DEST || (process.platform === 'win32'
   ? 'H:\\Meu Drive\\Thumbs'
-  : path.join(__dirname, 'mock_data', 'dest');
+  : path.join(__dirname, 'mock_data', 'dest'));
 
 // Paths for synced list system
-const DRIVE_LIST_PATH = 'H:\\Meu Drive\\Thumbs\\lista.txt';
-const ADOBE_LIST_PATH = 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt';
+const DRIVE_LIST_PATH = process.env.THUMBSYNC_DRIVE_LIST || 'H:\\Meu Drive\\Thumbs\\lista.txt';
+const ADOBE_LIST_PATH = process.env.THUMBSYNC_ADOBE_LIST || 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\cassino\\lista.txt';
 const SYNC_BASE_FILE = path.join(process.cwd(), 'list-sync-base.txt');
 
 // Helper structures and algorithms for collision-free Three-way List merges (Multi-device offline safe)
@@ -332,7 +332,7 @@ const DEFAULT_GAME_LIST = process.platform === 'win32'
   : path.join(__dirname, 'mock_data', 'lista.txt');
 
 const DEFAULT_PSD = process.platform === 'win32'
-  ? DEFAULT_SOURCE
+  ? (process.env.THUMBSYNC_PSD || DEFAULT_SOURCE)
   : path.join(__dirname, 'mock_data', 'psds');
 
 let appConfig = {
@@ -1097,6 +1097,50 @@ async function startServer() {
   }
 
   // --- API ROUTES ---
+
+  app.post("/api/upload-background", (req, res) => {
+    try {
+      const { image, fileName } = req.body;
+      if (!image) {
+        return res.status(400).json({ error: "Imagem não fornecida" });
+      }
+
+      const matches = image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (!matches || matches.length !== 3) {
+        return res.status(400).json({ error: "Formato de imagem inválido" });
+      }
+
+      const fileBuffer = Buffer.from(matches[2], 'base64');
+      const ext = path.extname(fileName || 'background.png') || '.png';
+      
+      const bgDir = path.join(process.cwd(), 'backgrounds');
+      if (!fs.existsSync(bgDir)) {
+        fs.mkdirSync(bgDir, { recursive: true });
+      }
+
+      const bgFileName = `custom_background_${Date.now()}${ext}`;
+      const bgFilePath = path.join(bgDir, bgFileName);
+
+      try {
+        const files = fs.readdirSync(bgDir);
+        for (const file of files) {
+          if (file.startsWith('custom_background_')) {
+            fs.unlinkSync(path.join(bgDir, file));
+          }
+        }
+      } catch (err) {
+        console.warn("Could not clean old backgrounds:", err);
+      }
+
+      fs.writeFileSync(bgFilePath, fileBuffer);
+      const absolutePath = path.resolve(bgFilePath);
+
+      res.json({ status: "success", path: absolutePath });
+    } catch (err) {
+      console.error("Error uploading background:", err);
+      res.status(500).json({ error: (err as Error).message });
+    }
+  });
 
   app.get("/api/custom-logos", (req, res) => {
     res.json(getCustomLogos());

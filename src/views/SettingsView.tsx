@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { GlassCard } from "../components/GlassCard.tsx";
-import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert, Bell, Volume2, Droplet, Sparkles, Layers } from "lucide-react";
+import { Save, Info, CheckCircle, Clock, Calendar, Smartphone, ShieldCheck, ShieldAlert, Bell, Volume2, Droplet, Sparkles, Layers, Upload, Trash2, Image, Sliders } from "lucide-react";
 import { playChimeSound, requestNotificationPermission, triggerNativeNotification } from "../utils/notificationSystem";
 
 export function SettingsView({ 
@@ -27,6 +27,22 @@ export function SettingsView({
     return localStorage.getItem("liquid-glass-intensity") || "medium";
   });
 
+  // Custom background states
+  const [bgEnabled, setBgEnabled] = useState(() => {
+    return localStorage.getItem("background-image-enabled") === "true";
+  });
+  const [bgPath, setBgPath] = useState(() => {
+    return localStorage.getItem("background-image-path") || "";
+  });
+  const [bgOpacity, setBgOpacity] = useState(() => {
+    return Number(localStorage.getItem("background-image-opacity") || "30");
+  });
+  const [bgBlur, setBgBlur] = useState(() => {
+    return Number(localStorage.getItem("background-image-blur") || "0");
+  });
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
   const handleToggleLiquidGlass = (enabled: boolean) => {
     setLiquidGlassEnabled(enabled);
     localStorage.setItem("liquid-glass-enabled", enabled ? "true" : "false");
@@ -38,6 +54,76 @@ export function SettingsView({
     localStorage.setItem("liquid-glass-intensity", intensity);
     window.dispatchEvent(new CustomEvent("liquid-glass-settings-updated"));
   };
+
+  const handleToggleBg = (enabled: boolean) => {
+    setBgEnabled(enabled);
+    localStorage.setItem("background-image-enabled", enabled ? "true" : "false");
+    window.dispatchEvent(new CustomEvent("background-settings-updated"));
+  };
+
+  const handleChangeBgPath = (path: string) => {
+    setBgPath(path);
+    localStorage.setItem("background-image-path", path);
+    window.dispatchEvent(new CustomEvent("background-settings-updated"));
+  };
+
+  const handleChangeBgOpacity = (opacity: number) => {
+    setBgOpacity(opacity);
+    localStorage.setItem("background-image-opacity", String(opacity));
+    window.dispatchEvent(new CustomEvent("background-settings-updated"));
+  };
+
+  const handleChangeBgBlur = (blur: number) => {
+    setBgBlur(blur);
+    localStorage.setItem("background-image-blur", String(blur));
+    window.dispatchEvent(new CustomEvent("background-settings-updated"));
+  };
+
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("A imagem deve ser menor que 10MB.");
+      return;
+    }
+
+    setUploadError("");
+    setIsUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      try {
+        const res = await fetch("/api/upload-background", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64, fileName: file.name })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.path) {
+            handleChangeBgPath(data.path);
+          }
+        } else {
+          const errData = await res.json();
+          setUploadError(errData.error || "Erro no upload.");
+        }
+      } catch (err) {
+        console.error("Upload error:", err);
+        setUploadError("Erro de rede ao enviar imagem.");
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearBg = () => {
+    handleChangeBgPath("");
+    setUploadError("");
+  };
+
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -249,7 +335,160 @@ export function SettingsView({
          </div>
       </GlassCard>
 
-       {/* PWA Local Network Installation Diagnostics Guide */}
+      {/* Appearance and Customization Card */}
+      <GlassCard className="max-w-2xl shadow-2xl border-white/[0.05]">
+        <h3 className="text-base md:text-lg font-extrabold text-white mb-2.5 flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#0a84ff]" />
+          Aparência e Personalização
+        </h3>
+        <p className="text-xs text-zinc-400 mb-5 font-semibold leading-relaxed">
+          Personalize o visual da sua interface, escolhendo imagens do computador e alterando efeitos de desfoque ou animações de fundo.
+        </p>
+
+        <div className="space-y-6">
+          {/* Liquid Glass Option */}
+          <div className="bg-white/[0.012] border border-white/[0.05] rounded-xl p-4 flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-bold text-zinc-300">Plano de Fundo Líquido Padrão (Liquid Glass)</label>
+              <p className="text-[11px] text-zinc-500 leading-relaxed max-w-sm">
+                Exibe blobs coloridos e orgânicos que se movem de forma fluida pelo fundo do aplicativo.
+              </p>
+            </div>
+            <button
+              onClick={() => handleToggleLiquidGlass(!liquidGlassEnabled)}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${liquidGlassEnabled ? 'bg-[#0a84ff]' : 'bg-white/10'}`}
+            >
+              <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${liquidGlassEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+          </div>
+
+          {/* Custom Background Image option */}
+          <div className="border-t border-white/[0.06] pt-6 space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-zinc-300">Ativar Imagem de Fundo Customizada</label>
+                <p className="text-[11px] text-zinc-500 leading-relaxed max-w-sm">
+                  Use qualquer arquivo de imagem do seu computador como plano de fundo.
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggleBg(!bgEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${bgEnabled ? 'bg-[#0a84ff]' : 'bg-white/10'}`}
+              >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${bgEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            {bgEnabled && (
+              <div className="space-y-4 rounded-2xl bg-white/[0.012] border border-white/[0.05] p-5">
+                {/* Image Path Input */}
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest font-sans">
+                    Caminho do Arquivo de Imagem no Computador
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={bgPath}
+                      onChange={(e) => handleChangeBgPath(e.target.value)}
+                      placeholder="C:\Imagens\wallpaper.jpg"
+                      className="flex-1 bg-white/[0.03] border border-white/[0.08] hover:border-white/10 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:outline-none transition-all font-mono"
+                    />
+                    {bgPath && (
+                      <button
+                        onClick={handleClearBg}
+                        className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center shrink-0"
+                        title="Limpar Caminho"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload File button */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <label className="glass-btn-secondary py-2 px-4 text-xs font-bold cursor-pointer inline-flex items-center gap-2 rounded-xl active:scale-95 transition-transform">
+                    <Upload className="w-4 h-4" />
+                    <span>{isUploading ? "Enviando..." : "Escolher Imagem do Computador"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
+                  </label>
+                  <span className="text-[10px] text-zinc-500 font-semibold">
+                    Escolha qualquer arquivo de imagem local para copiar para o app.
+                  </span>
+                </div>
+
+                {uploadError && (
+                  <p className="text-red-400 text-xs font-semibold">{uploadError}</p>
+                )}
+
+                {/* Opacity & Blur sliders */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-zinc-400">
+                      <span>OPACIDADE DA IMAGEM</span>
+                      <span>{bgOpacity}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={bgOpacity}
+                      onChange={(e) => handleChangeBgOpacity(Number(e.target.value))}
+                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#0a84ff]"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-zinc-400">
+                      <span>DESFOQUE (BLUR)</span>
+                      <span>{bgBlur}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="40"
+                      value={bgBlur}
+                      onChange={(e) => handleChangeBgBlur(Number(e.target.value))}
+                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#0a84ff]"
+                    />
+                  </div>
+                </div>
+
+                {/* Preview Box */}
+                {bgPath && (
+                  <div className="pt-2">
+                    <span className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">
+                      Pré-visualização do Plano de Fundo
+                    </span>
+                    <div className="h-32 rounded-xl border border-white/[0.08] relative overflow-hidden bg-black/40 flex items-center justify-center">
+                      <div
+                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                        style={{
+                          backgroundImage: `url(/api/image?path=${encodeURIComponent(bgPath)})`,
+                          opacity: bgOpacity / 100,
+                          filter: bgBlur > 0 ? `blur(${bgBlur}px)` : 'none',
+                        }}
+                      />
+                      <span className="relative z-10 text-[11px] font-bold text-zinc-300 bg-black/60 px-3 py-1.5 rounded-lg border border-white/10 backdrop-blur-sm pointer-events-none">
+                        Visualização de Teste
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </GlassCard>
+
+      {/* PWA Local Network Installation Diagnostics Guide */}
        <GlassCard className="max-w-2xl shadow-2xl border-white/[0.05]">
           <h3 className="text-base md:text-lg font-extrabold text-white mb-2.5 flex items-center gap-2">
             <Smartphone className="w-5 h-5 text-[#0a84ff]" />
