@@ -1,22 +1,24 @@
 {
-  "name": "ThumbSync",
   "short_name": "ThumbSync",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#070709",
-  "theme_color": "#070709",
+  "name": "ThumbSync - Gestor de Catálogo",
   "icons": [
     {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
+      "src": "icon-192.png",
       "type": "image/png",
+      "sizes": "192x192",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "icon-512.png",
       "type": "image/png",
-      "purpose": "any"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "start_url": "/",
+  "background_color": "#060608",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#0a84ff",
+  "description": "Sincronização inteligente de miniaturas para catálogo de jogos."
 }

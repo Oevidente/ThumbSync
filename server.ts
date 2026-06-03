@@ -1,8 +1,10 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
+import https from "https";
 import path from "path";
 import { fileURLToPath } from "url";
+import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1062,6 +1064,19 @@ async function startServer() {
 
   const CUSTOM_LOGOS_FILE = path.join(process.cwd(), 'custom_logos.json');
 
+  // Helper to get local IP address for easy mobile access
+  function getLocalIP() {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]!) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return 'localhost';
+  }
+
   function getCustomLogos() {
     if (fs.existsSync(CUSTOM_LOGOS_FILE)) {
       try {
@@ -1619,8 +1634,8 @@ async function startServer() {
   });
 
   // Interceptadores de cabecalhos MIME para PWA instalável
-  app.get('/manifest.webmanifest', (req, res, next) => {
-    res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  app.get(['/manifest.json', '/manifest.webmanifest'], (req, res, next) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
     next();
   });
 
@@ -1644,9 +1659,32 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  // Check if we should run in HTTPS (required for mobile PWA installation)
+  const certPath = path.join(process.cwd(), 'key.pem');
+  const keyPath = path.join(process.cwd(), 'cert.pem');
+  const useHttps = fs.existsSync(certPath) && fs.existsSync(keyPath);
+
+  if (useHttps) {
+    const httpsOptions = {
+      key: fs.readFileSync(certPath),
+      cert: fs.readFileSync(keyPath),
+    };
+    https.createServer(httpsOptions, app).listen(PORT, "0.0.0.0", () => {
+      console.log(`
+  🚀 ThumbSync (MODO SEGURO)
+  Local:   https://localhost:${PORT}
+  Celular: https://${getLocalIP()}:${PORT} (Use este no Android para instalar o PWA)
+      `);
+    });
+  } else {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`
+  ⚠️  ThumbSync (MODO HTTP - PWA não instalável via IP)
+  Local:   http://localhost:${PORT}
+  Celular: http://${getLocalIP()}:${PORT}
+      `);
+    });
+  }
 }
 
 startServer();
