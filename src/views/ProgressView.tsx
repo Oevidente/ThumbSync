@@ -53,9 +53,6 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
     const saved = localStorage.getItem('watchBatchLimit');
     return saved ? parseInt(saved, 10) || 12 : 12;
   });
-  const [watchImmediateEnabled, setWatchImmediateEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('watchImmediateEnabled') === 'true';
-  });
 
   const orderedPendingFiles = useMemo(() => {
     return [...pendingFiles].sort((a, b) => {
@@ -154,7 +151,6 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
             endMinute,
             watchBatchEnabled,
             watchBatchLimit,
-            watchImmediateEnabled,
           },
         }),
       });
@@ -322,26 +318,6 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                   </p>
 
                   <div className="pt-4 mt-4 border-t border-purple-500/10 space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-bold text-zinc-300">Cópia Imediata</label>
-                        <p className="text-[10px] text-zinc-500 max-w-sm leading-normal">Ignorar intervalo e copiar assim que o arquivo for detectado.</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const val = !watchImmediateEnabled;
-                          setWatchImmediateEnabled(val);
-                          localStorage.setItem('watchImmediateEnabled', val ? 'true' : 'false');
-                        }}
-                        id="btn-toggle-watch-immediate"
-                        disabled={isRunning}
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${watchImmediateEnabled ? 'bg-purple-600' : 'bg-white/10'} disabled:opacity-50`}
-                      >
-                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-250 ease-in-out ${watchImmediateEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
-                    </div>
-
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex flex-col gap-0.5">
                         <label className="text-xs font-bold text-zinc-300">Modo Lote (Limite)</label>
@@ -544,7 +520,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                       Standby Ativo {status.watchBatchEnabled ? `(Lote de ${status.watchBatchLimit})` : ''}
                     </h4>
                     <p className="text-[11px] text-purple-200">
-                      {status.watchBatchEnabled
+                      {status.watchBatchEnabled 
                         ? `Monitorando. Mantendo o lote limitado a um máximo de ${status.watchBatchLimit} arquivos.`
                         : 'Procurando por novos arquivos na de origem...'}
                     </p>
@@ -628,7 +604,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                         :
                         {Math.floor(
                           (Math.max(0, status.nextCopyAt - now) % 3600000) /
-                          60000,
+                            60000,
                         )
                           .toString()
                           .padStart(2, '0')}
@@ -643,7 +619,7 @@ export function ProgressView({ pendingFiles }: { pendingFiles: any[] }) {
                   ) : status.currentFileWaiting &&
                     status.nextCopyAt &&
                     status.nextCopyAt > now ? (
-                    <div className="flex items-center gap-4 bg-[#0a84ff]/5 border border-[#0a84ff]/10 p-4 rounded-xl">
+                     <div className="flex items-center gap-4 bg-[#0a84ff]/5 border border-[#0a84ff]/10 p-4 rounded-xl">
                       <div className="w-8 h-8 rounded-full bg-[#0a84ff]/10 flex items-center justify-center shrink-0">
                         <Clock className="w-4 h-4 text-[#0a84ff] animate-spin" style={{ animationDuration: '4s' }} />
                       </div>
