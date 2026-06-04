@@ -8,3 +8,4 @@ coverage/
 !.env.example
 mock_data/
 list-sync-base.txt
+backgrounds/

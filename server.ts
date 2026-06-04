@@ -11,7 +11,7 @@ const __dirname = path.dirname(__filename);
 
 // --- LOGIC FROM SCRIPTS ---
 
-const DEFAULT_SOURCE = process.env.THUMBSYNC_SOURCE || (process.platform === 'win32' 
+const DEFAULT_SOURCE = process.env.THUMBSYNC_SOURCE || (process.platform === 'win32'
   ? 'G:\\Documentos\\Creative Cloud Files Personal Account andreluiz1902@gmail.com 14392106563A51EF7F000101@AdobeID\\Thumbs'
   : path.join(__dirname, 'mock_data', 'source'));
 const DEFAULT_DEST = process.env.THUMBSYNC_DEST || (process.platform === 'win32'
@@ -85,7 +85,7 @@ function blocksToString(blocks: ProviderBlock[]): string {
   const lines: string[] = [];
   blocks.forEach((block, idx) => {
     if (block.games.length === 0 && block.providerName === "Sem provedor") {
-      return; 
+      return;
     }
     if (idx > 0) {
       lines.push("");
@@ -174,7 +174,7 @@ function mergeThreeWay(baseContent: string, clientContent: string, serverContent
     const parts = compositeKey.split("::");
     const provKey = parts[0];
     const gameNorm = parts[1];
-    
+
     let group = providerGroups.get(provKey);
     if (!group) {
       group = new Set<string>();
@@ -195,7 +195,7 @@ function mergeThreeWay(baseContent: string, clientContent: string, serverContent
     const actualProvName = providerNames.get(provKey) || provKey;
     const gameNorms = providerGroups.get(provKey)!;
     const gamesList: GameEntry[] = [];
-    
+
     const sortedGameNorms = Array.from(gameNorms).sort((ga, gb) => {
       const nameA = gameDisplayNames.get(`${provKey}::${ga}`) || ga;
       const nameB = gameDisplayNames.get(`${provKey}::${gb}`) || gb;
@@ -298,7 +298,7 @@ function resolveAndSyncList(): string {
       if (baseContent !== driveContent) {
         fs.writeFileSync(SYNC_BASE_FILE, driveContent, 'utf8');
       }
-    } catch (e) {}
+    } catch (e) { }
     const selectedPath = DRIVE_LIST_PATH;
     if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
     return selectedPath;
@@ -315,7 +315,7 @@ function resolveAndSyncList(): string {
       if (baseContent !== adobeContent) {
         fs.writeFileSync(SYNC_BASE_FILE, adobeContent, 'utf8');
       }
-    } catch (e) {}
+    } catch (e) { }
     const selectedPath = ADOBE_LIST_PATH;
     if (typeof appConfig !== 'undefined') appConfig.list = selectedPath;
     return selectedPath;
@@ -377,17 +377,17 @@ function buildWorkWindow(now = new Date(), settings: any = {}) {
 
   // Se já passou do fim do expediente de hoje, a janela é amanhã.
   if (now.getTime() > endAt.getTime()) {
-      startAt.setDate(startAt.getDate() + 1);
-      endAt.setDate(endAt.getDate() + 1);
+    startAt.setDate(startAt.getDate() + 1);
+    endAt.setDate(endAt.getDate() + 1);
   }
 
   // Se cruza a meia-noite
   if (startAt.getTime() > endAt.getTime()) {
-      if (now.getTime() <= endAt.getTime()) {
-          startAt.setDate(startAt.getDate() - 1);
-      } else {
-          endAt.setDate(endAt.getDate() + 1);
-      }
+    if (now.getTime() <= endAt.getTime()) {
+      startAt.setDate(startAt.getDate() - 1);
+    } else {
+      endAt.setDate(endAt.getDate() + 1);
+    }
   }
 
   const firstCopyReleaseAt = new Date(
@@ -406,19 +406,19 @@ function buildWorkWindow(now = new Date(), settings: any = {}) {
 
 // Function to block flow until time window opens
 async function waitForWindow(state: any, settings: any) {
-    while (state && state.status === 'running') {
-        const win = buildWorkWindow(new Date(), settings);
-        const now = new Date();
-        if (now.getTime() >= win.startAt.getTime() && now.getTime() <= win.endAt.getTime()) {
-            state.waitingForWindow = false;
-            return true;
-        }
-        
-        state.waitingForWindow = true;
-        state.nextCopyAt = win.startAt.getTime();
-        await new Promise(r => setTimeout(r, 2000));
+  while (state && state.status === 'running') {
+    const win = buildWorkWindow(new Date(), settings);
+    const now = new Date();
+    if (now.getTime() >= win.startAt.getTime() && now.getTime() <= win.endAt.getTime()) {
+      state.waitingForWindow = false;
+      return true;
     }
-    return false;
+
+    state.waitingForWindow = true;
+    state.nextCopyAt = win.startAt.getTime();
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  return false;
 }
 
 function buildStretchDelaySchedule(queueLength: number, firstCopyDelayMs: number, availableWindowMs: number) {
@@ -516,7 +516,7 @@ function collectPsdCatalogData(psdDir: string, sourceDir: string, destDir: strin
     const normProv = normalizeProviderName(providerName);
     const normGame = normalizeGameName(gameName);
     const key = `${normalizeGameName(normProv)}::${normGame}`;
-    
+
     if (catalogMap.has(key)) {
       return catalogMap.get(key);
     }
@@ -571,7 +571,7 @@ function collectPsdCatalogData(psdDir: string, sourceDir: string, destDir: strin
 
         const normalized = normalizeGameName(displayName);
         if (!normalized) return;
-        
+
         getOrCreateEntry(currentProviderName, normalized, displayName).isListed = true;
       });
     } catch (e) {
@@ -734,7 +734,7 @@ Aviator`;
       }
       if (!fs.existsSync(subDir)) fs.mkdirSync(subDir, { recursive: true });
       fs.writeFileSync(path.join(subDir, name), placeholderBuffer);
-      
+
       // Delay modified times so some look newer or missing
       const pastDate = new Date();
       pastDate.setMinutes(pastDate.getMinutes() - (idx * 15));
@@ -750,13 +750,13 @@ Aviator`;
   if (filesInPsd.length === 0) {
     const placeholderBuffer = Buffer.from('RIFF_psd_placeholder_data');
     const mockPsds = [
-      'Gates of Olympus.psd', 
-      'Sweet Bonanza.psd', 
-      'Fortune Tiger.psd', 
-      'Zeus vs Hades.psd', 
-      'Aviator.psd', 
+      'Gates of Olympus.psd',
+      'Sweet Bonanza.psd',
+      'Fortune Tiger.psd',
+      'Zeus vs Hades.psd',
+      'Aviator.psd',
       'Midas Golden Touch.psd',
-      'Gates of Olympus 1000.psd', 
+      'Gates of Olympus 1000.psd',
       'Ninja Raccoon.psd'
     ];
     mockPsds.forEach((name, idx) => {
@@ -1112,7 +1112,7 @@ async function startServer() {
 
       const fileBuffer = Buffer.from(matches[2], 'base64');
       const ext = path.extname(fileName || 'background.png') || '.png';
-      
+
       const bgDir = path.join(process.cwd(), 'backgrounds');
       if (!fs.existsSync(bgDir)) {
         fs.mkdirSync(bgDir, { recursive: true });
@@ -1169,9 +1169,9 @@ async function startServer() {
 
   app.get("/api/config", (req, res) => {
     const listPath = resolveAndSyncList();
-    res.json({ 
-      source: appConfig.source, 
-      dest: appConfig.dest, 
+    res.json({
+      source: appConfig.source,
+      dest: appConfig.dest,
       list: listPath,
       simulateDates: appConfig.simulateDates ?? true,
       simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset ?? 1,
@@ -1187,11 +1187,11 @@ async function startServer() {
     if (simulateDates !== undefined) appConfig.simulateDates = !!simulateDates;
     if (simulateDateMinutesOffset !== undefined) appConfig.simulateDateMinutesOffset = Number(simulateDateMinutesOffset);
     if (psd) appConfig.psd = psd;
-    
+
     const listPath = resolveAndSyncList();
-    res.json({ 
-      source: appConfig.source, 
-      dest: appConfig.dest, 
+    res.json({
+      source: appConfig.source,
+      dest: appConfig.dest,
       list: listPath,
       simulateDates: appConfig.simulateDates,
       simulateDateMinutesOffset: appConfig.simulateDateMinutesOffset,
@@ -1206,7 +1206,7 @@ async function startServer() {
 
     const data = collectComparisonData(source, dest);
     const recordsData = collectDestinationRecords(dest);
-    
+
     // Game List Logic
     let gameListData: any = { status: 'missing' };
     if (fs.existsSync(listPath)) {
@@ -1222,7 +1222,7 @@ async function startServer() {
         const sentGameNames = new Set<string>();
         const sentProviderGameKeys = new Set<string>();
         let currentProviderName = 'Sem provedor';
-        
+
         // Add existing in dest
         collectWebpFiles(dest).forEach(f => {
           const relativePath = path.relative(dest, f);
@@ -1334,28 +1334,28 @@ async function startServer() {
       const windowInfo = buildWorkWindow(new Date(), settings);
       const availableWindowMs = windowInfo.endAt.getTime() - windowInfo.now.getTime();
       const firstCopyDelayMs = Math.max(0, windowInfo.firstCopyReleaseAt.getTime() - windowInfo.now.getTime());
-      
+
       console.log(`[Lote] Calculando schedule para ${availableWindowMs} ms disponíveis.`);
       const delays = buildStretchDelaySchedule(queuedFiles.length, firstCopyDelayMs, availableWindowMs);
-      
+
       for (let i = 0; i < queuedFiles.length; i++) {
         if (!currentCopyState || currentCopyState.status !== 'running') break;
-        
+
         // Re-check window just in case (though it should be mostly inside if calculated right)
         if (!await waitForWindow(currentCopyState, settings)) return;
 
         const file = queuedFiles[i];
         const delay = delays[i] || 0;
-        
+
         currentCopyState.nextCopyAt = Date.now() + delay;
         currentCopyState.currentFileWaiting = file.relativePath.split('/').pop();
-        
+
         if (delay > 0) {
-            const step = 2000;
-            for(let waited = 0; waited < delay; waited += step) {
-                if (!currentCopyState || currentCopyState.status !== 'running') return;
-                await new Promise(r => setTimeout(r, Math.min(step, delay - waited)));
-            }
+          const step = 2000;
+          for (let waited = 0; waited < delay; waited += step) {
+            if (!currentCopyState || currentCopyState.status !== 'running') return;
+            await new Promise(r => setTimeout(r, Math.min(step, delay - waited)));
+          }
         }
 
         try {
@@ -1428,7 +1428,7 @@ async function startServer() {
     const source = (req.body.source as string) || appConfig.source;
     const dest = (req.body.dest as string) || appConfig.dest;
     const settings = req.body.settings || {};
-    
+
     if (currentCopyState && currentCopyState.status === 'running') {
       return res.status(400).json({ error: "A copy process is already running." });
     }
@@ -1449,7 +1449,8 @@ async function startServer() {
       nextCopyAt: 0,
       currentFileWaiting: null,
       watchBatchEnabled: !!settings.watchBatchEnabled,
-      watchBatchLimit: Number(settings.watchBatchLimit) || 0
+      watchBatchLimit: Number(settings.watchBatchLimit) || 0,
+      watchImmediateEnabled: !!settings.watchImmediateEnabled
     };
 
     // Run dynamic time-splitting watch mode as an active loop
@@ -1460,13 +1461,13 @@ async function startServer() {
         try {
           const win = buildWorkWindow(new Date(), settings);
           const now = new Date();
-          
+
           // Check if outside of-office hours
           if (now.getTime() < win.startAt.getTime() || now.getTime() > win.endAt.getTime()) {
             currentCopyState.waitingForWindow = true;
             currentCopyState.nextCopyAt = win.startAt.getTime();
             currentCopyState.currentFileWaiting = null;
-            
+
             // Sleep for 5 seconds and poll again
             await new Promise(r => setTimeout(r, 5000));
             continue;
@@ -1502,31 +1503,35 @@ async function startServer() {
             lastQueueSignature = currentSignature;
 
             const nowMs = Date.now();
-            const availableWindowMs = Math.max(0, win.endAt.getTime() - nowMs);
-            
-            let firstCopyDelayMs = 0;
-            if (nowMs < win.firstCopyReleaseAt.getTime()) {
-              firstCopyDelayMs = Math.max(0, win.firstCopyReleaseAt.getTime() - nowMs);
-            } else {
-              // Recalculate time spacing to stretch files across remaining window
-              firstCopyDelayMs = Math.max(0, Math.floor(availableWindowMs / pendingFiles.length));
-              
-              // Cap interval to a maximum of MAX_INTERVAL_MINUTES (10 mins) for small queues to ensure usability
-              const maxIntervalMs = MAX_INTERVAL_MINUTES * 60 * 1000;
-              if (firstCopyDelayMs > maxIntervalMs) {
-                firstCopyDelayMs = maxIntervalMs;
-              }
-            }
+            let delay = 0;
 
-            const delays = buildStretchDelaySchedule(pendingFiles.length, firstCopyDelayMs, availableWindowMs);
-            const delay = delays[0] || 0;
+            if (!settings.watchImmediateEnabled) {
+              const availableWindowMs = Math.max(0, win.endAt.getTime() - nowMs);
+
+              let firstCopyDelayMs = 0;
+              if (nowMs < win.firstCopyReleaseAt.getTime()) {
+                firstCopyDelayMs = Math.max(0, win.firstCopyReleaseAt.getTime() - nowMs);
+              } else {
+                // Recalculate time spacing to stretch files across remaining window
+                firstCopyDelayMs = Math.max(0, Math.floor(availableWindowMs / pendingFiles.length));
+
+                // Cap interval to a maximum of MAX_INTERVAL_MINUTES (10 mins) for small queues to ensure usability
+                const maxIntervalMs = MAX_INTERVAL_MINUTES * 60 * 1000;
+                if (firstCopyDelayMs > maxIntervalMs) {
+                  firstCopyDelayMs = maxIntervalMs;
+                }
+              }
+
+              const delays = buildStretchDelaySchedule(pendingFiles.length, firstCopyDelayMs, availableWindowMs);
+              delay = delays[0] || 0;
+            }
 
             currentCopyState.nextCopyAt = nowMs + delay;
             currentCopyState.total = pendingFiles.length;
-            
+
             const nextFile = pendingFiles[0];
             currentCopyState.currentFileWaiting = nextFile.relativePath.split(/[\\/]/).pop();
-            
+
             // Calculate progress
             const remainingCount = pendingFiles.length;
             const totalCount = currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped + remainingCount;
@@ -1548,7 +1553,7 @@ async function startServer() {
 
             // Mark completed so the next tick immediately triggers a fresh scan and schedule rebuild
             currentCopyState.nextCopyAt = 0;
-            
+
             // Recalculate progress for the next tick
             const remainingCount = pendingFiles.length - 1;
             const totalCount = currentCopyState.copied + currentCopyState.failed + currentCopyState.skipped + remainingCount;
@@ -1574,11 +1579,11 @@ async function startServer() {
 
   app.post("/api/copy/stop", (req, res) => {
     if (currentCopyState) {
-        currentCopyState.status = 'stopped';
+      currentCopyState.status = 'stopped';
     }
     if (watchInterval) {
-        clearInterval(watchInterval);
-        watchInterval = null;
+      clearInterval(watchInterval);
+      watchInterval = null;
     }
     currentCopyState = null;
     res.json({ status: "stopped" });
@@ -1586,14 +1591,14 @@ async function startServer() {
 
   app.post("/api/copy/finalize", (req, res) => {
     if (currentCopyState) {
-        currentCopyState.status = 'finished';
-        currentCopyState.progress = 100;
-        currentCopyState.nextCopyAt = 0;
-        currentCopyState.currentFileWaiting = null;
+      currentCopyState.status = 'finished';
+      currentCopyState.progress = 100;
+      currentCopyState.nextCopyAt = 0;
+      currentCopyState.currentFileWaiting = null;
     }
     if (watchInterval) {
-        clearInterval(watchInterval);
-        watchInterval = null;
+      clearInterval(watchInterval);
+      watchInterval = null;
     }
     res.json(currentCopyState || { status: 'idle' });
   });
@@ -1603,13 +1608,13 @@ async function startServer() {
   app.get("/api/list/content", (req, res) => {
     const listPath = (req.query.list as string) || resolveAndSyncList();
     if (!fs.existsSync(listPath)) {
-        return res.json({ content: '' });
+      return res.json({ content: '' });
     }
     try {
-        const content = fs.readFileSync(listPath, 'utf8');
-        res.json({ content });
+      const content = fs.readFileSync(listPath, 'utf8');
+      res.json({ content });
     } catch (err) {
-        res.status(500).json({ error: (err as Error).message });
+      res.status(500).json({ error: (err as Error).message });
     }
   });
 
@@ -1617,42 +1622,42 @@ async function startServer() {
     const listPath = (req.query.list as string) || resolveAndSyncList();
     const { content, base } = req.body;
     try {
-        const destFolder = path.dirname(listPath);
-        if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
+      const destFolder = path.dirname(listPath);
+      if (!fs.existsSync(destFolder)) fs.mkdirSync(destFolder, { recursive: true });
 
-        let finalContent = content;
-        if (typeof base === "string") {
-          let serverContent = "";
-          if (fs.existsSync(listPath)) {
-            serverContent = fs.readFileSync(listPath, "utf8");
-          }
-          finalContent = mergeThreeWay(base, content, serverContent);
+      let finalContent = content;
+      if (typeof base === "string") {
+        let serverContent = "";
+        if (fs.existsSync(listPath)) {
+          serverContent = fs.readFileSync(listPath, "utf8");
         }
+        finalContent = mergeThreeWay(base, content, serverContent);
+      }
 
-        fs.writeFileSync(listPath, finalContent, "utf8");
+      fs.writeFileSync(listPath, finalContent, "utf8");
 
-        // Also write to both synced paths and sync-base on Windows
-        if (process.platform === 'win32') {
-          try {
-            const driveAvailable = fs.existsSync(path.dirname(DRIVE_LIST_PATH));
-            const adobeAvailable = fs.existsSync(path.dirname(ADOBE_LIST_PATH));
-            
-            if (driveAvailable) {
-              fs.writeFileSync(DRIVE_LIST_PATH, finalContent, "utf8");
-            }
-            if (adobeAvailable) {
-              fs.writeFileSync(ADOBE_LIST_PATH, finalContent, "utf8");
-            }
-            fs.writeFileSync(SYNC_BASE_FILE, finalContent, "utf8");
-            console.log('[ListSave] Unified save completed across Drive, Adobe lists and Sync Base.');
-          } catch (syncErr) {
-            console.error('[ListSave] Sync-on-save error:', syncErr);
+      // Also write to both synced paths and sync-base on Windows
+      if (process.platform === 'win32') {
+        try {
+          const driveAvailable = fs.existsSync(path.dirname(DRIVE_LIST_PATH));
+          const adobeAvailable = fs.existsSync(path.dirname(ADOBE_LIST_PATH));
+
+          if (driveAvailable) {
+            fs.writeFileSync(DRIVE_LIST_PATH, finalContent, "utf8");
           }
+          if (adobeAvailable) {
+            fs.writeFileSync(ADOBE_LIST_PATH, finalContent, "utf8");
+          }
+          fs.writeFileSync(SYNC_BASE_FILE, finalContent, "utf8");
+          console.log('[ListSave] Unified save completed across Drive, Adobe lists and Sync Base.');
+        } catch (syncErr) {
+          console.error('[ListSave] Sync-on-save error:', syncErr);
         }
+      }
 
-        res.json({ status: "success", mergedContent: finalContent });
+      res.json({ status: "success", mergedContent: finalContent });
     } catch (err) {
-        res.status(500).json({ error: (err as Error).message });
+      res.status(500).json({ error: (err as Error).message });
     }
   });
 
@@ -1667,7 +1672,7 @@ async function startServer() {
       if (ext === '.webp') contentType = 'image/webp';
       else if (ext === '.png') contentType = 'image/png';
       else if (ext === '.svg') contentType = 'image/svg+xml';
-      
+
       res.setHeader('Content-Type', contentType);
       const fileStream = fs.createReadStream(imagePath);
       fileStream.pipe(res);
