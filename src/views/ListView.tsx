@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Trash2,
   RefreshCw,
+  Upload,
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
@@ -66,9 +67,8 @@ function ListViewProviderGroup({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] active:bg-white/[0.07] border border-white/[0.04] px-4 py-3.5 font-sans text-xs sm:text-sm ${
-          isReadySection ? 'text-[#0a84ff]' : 'text-[#ff9f0a]'
-        } backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none min-h-[44px]`}
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] active:bg-white/[0.07] border border-white/[0.04] px-4 py-3.5 font-sans text-xs sm:text-sm ${isReadySection ? 'text-[#0a84ff]' : 'text-[#ff9f0a]'
+          } backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none min-h-[44px]`}
       >
         <span className="font-bold truncate flex items-center gap-2">
           {isExpanded ? (
@@ -79,11 +79,10 @@ function ListViewProviderGroup({
           Provedor: <span className="text-white font-black">{group.providerName}</span>
         </span>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${
-            isReadySection
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${isReadySection
               ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/15'
               : 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/15'
-          }`}
+            }`}
         >
           {group.games?.length || 0}
         </span>
@@ -93,7 +92,7 @@ function ListViewProviderGroup({
         <div className="space-y-2 pl-2 border-l border-white/[0.05] ml-4 md:ml-5">
           {group.games?.map((game: any, i: number) => {
             const providerName = game.providerName || group.providerName;
-            
+
             if (isReadySection) {
               const normalizedName =
                 game.normalized || normalizeGameName(game.displayName);
@@ -106,7 +105,7 @@ function ListViewProviderGroup({
               if (
                 !isSent &&
                 normalizeGameName(providerName) ===
-                  normalizeGameName('Sem provedor')
+                normalizeGameName('Sem provedor')
               ) {
                 isSent = sentData?.names.has(normalizedName);
               }
@@ -114,11 +113,10 @@ function ListViewProviderGroup({
               return (
                 <div
                   key={`${game.displayName}-${i}`}
-                  className={`group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl border text-xs sm:text-sm font-semibold font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px] ${
-                    isSent
+                  className={`group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl border text-xs sm:text-sm font-semibold font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px] ${isSent
                       ? 'bg-[#30d158]/5 border-[#30d158]/12 text-[#30d158]'
                       : 'bg-[#0a84ff]/5 border-[#0a84ff]/12 text-zinc-300 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className="truncate pr-1">{game.displayName}</span>
                   <button
@@ -318,6 +316,76 @@ export function ListView({
     }
   };
 
+  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length === 0) return;
+
+      const delimiter = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+
+      // Mapeamento inteligente de colunas
+      const targetKeywords = ['name', 'customname', 'jogo', 'titulo', 'title', 'display', 'nome'];
+      let gameColIdx = headers.findIndex(h => targetKeywords.some(k => h.includes(k)));
+      if (gameColIdx === -1) gameColIdx = 0; // Fallback para primeira coluna
+
+      const importedGames: string[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(delimiter);
+        const gameName = cols[gameColIdx]?.trim().replace(/^["']|["']$/g, '');
+        if (gameName) importedGames.push(gameName);
+      }
+
+      const currentContent = await getCurrentListContent();
+      const existingNormalized = new Set<string>();
+
+      // Parse do conteúdo atual para evitar duplicatas globais
+      currentContent.split(/\r?\n/).forEach(line => {
+        const clean = line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
+        if (!clean || /^provedor\s*:/i.test(clean) || clean.startsWith('#') || clean.includes('?')) return;
+        existingNormalized.add(normalizeGameName(clean));
+      });
+
+      const newGamesToAdd: string[] = [];
+      const seenInCsv = new Set<string>();
+
+      importedGames.forEach(game => {
+        const norm = normalizeGameName(game);
+        // Validação tripla: existe no CSV? Já existe na lista.txt? Já vimos nesta importação?
+        if (norm && !existingNormalized.has(norm) && !seenInCsv.has(norm)) {
+          newGamesToAdd.push(game);
+          seenInCsv.add(norm);
+        }
+      });
+
+      if (newGamesToAdd.length === 0) {
+        alert("Nenhum jogo novo encontrado. Todos os itens já constam na lista ou estão duplicados no arquivo.");
+      } else {
+        // Popula o modal de adição com os jogos filtrados para revisão do usuário
+        setGamesInput(newGamesToAdd.join('\n'));
+        setIsAddModalOpen(true);
+
+        window.dispatchEvent(new CustomEvent("thumbsync-show-notification", {
+          detail: {
+            title: "CSV Processado 📂",
+            message: `${newGamesToAdd.length} jogos únicos filtrados e prontos para adicionar.`,
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("Erro ao importar CSV:", err);
+      alert("Erro ao processar o arquivo CSV.");
+    } finally {
+      setIsLoading(false);
+      e.target.value = ''; // Reset input
+    }
+  };
+
   const saveListContent = async () => {
     setIsLoading(true);
     try {
@@ -335,7 +403,7 @@ export function ListView({
     try {
       const currentContent = await getCurrentListContent();
       const lines = currentContent.split(/\r?\n/);
-      
+
       const isProviderLine = (line: string) => /^provedor\s*:/i.test(line);
       const getProviderName = (line: string) => {
         const match = line.match(/^provedor\s*:\s*(.+)$/i);
@@ -395,7 +463,7 @@ export function ListView({
         };
 
         let activeProvider = 'Sem provedor';
-        
+
         // Build a lookup set of provider::game for delivered games
         const deliveredKeys = new Set(
           (gameListData?.readyGames || []).map((g: any) =>
@@ -406,7 +474,7 @@ export function ListView({
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
           const trimmed = line.trim();
-          
+
           if (isProviderLine(trimmed)) {
             const name = getProviderName(trimmed);
             activeProvider = name || 'Sem provedor';
@@ -681,7 +749,7 @@ export function ListView({
             Administre os jogos registrados no acervo mestre da aplicação (lista.txt).
           </p>
         </div>
-        <button 
+        <button
           onClick={exportPendingList}
           disabled={!gameListData?.remainingGames?.length}
           className="glass-btn-secondary min-h-[44px] !py-2.5 !px-5 flex items-center justify-center gap-2.5 cursor-pointer text-xs sm:text-sm font-bold disabled:opacity-45 disabled:hover:shadow-none w-full sm:w-auto rounded-xl shadow-md"
@@ -748,6 +816,18 @@ export function ListView({
                 </button>
                 <button
                   type="button"
+                  onClick={() => document.getElementById('csv-import-input')?.click()}
+                  className="glass-btn-secondary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-bold cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
+                >
+                  <Upload className="w-4 h-4 shrink-0" />
+                  <span>Importar CSV</span>
+                  <input
+                    type="file" id="csv-import-input" accept=".csv"
+                    className="hidden" onChange={handleCsvImport}
+                  />
+                </button>
+                <button
+                  type="button"
                   onClick={() => setIsEditing(true)}
                   className="glass-btn-secondary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-bold cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
                 >
@@ -793,22 +873,20 @@ export function ListView({
                 <button
                   type="button"
                   onClick={() => setActiveListTab('pending')}
-                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${
-                    activeListTab === 'pending'
+                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${activeListTab === 'pending'
                       ? 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/20 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-350 border border-transparent'
-                  }`}
+                    }`}
                 >
                   Faltando ({gameListData.remainingGames?.length || 0})
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveListTab('ready')}
-                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${
-                    activeListTab === 'ready'
+                  className={`flex-1 py-2.5 text-center text-xs font-extrabold rounded-lg transition-all duration-200 cursor-pointer ${activeListTab === 'ready'
                       ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/20 shadow-xs'
                       : 'text-zinc-500 hover:text-zinc-350 border border-transparent'
-                  }`}
+                    }`}
                 >
                   Prontos ({gameListData.completedGames})
                 </button>
@@ -827,7 +905,7 @@ export function ListView({
             ) : (
               <div className="flex-1 p-3 sm:p-4 md:p-5 bg-[#0c0c0f]/40 text-gray-400 text-xs flex flex-col">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 flex-1">
-                  
+
                   {/* Seção Prontos */}
                   <div className={`flex flex-col ${activeListTab === 'ready' ? 'flex' : 'hidden md:flex'}`}>
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#0a84ff] shrink-0 text-xs sm:text-sm">
@@ -855,7 +933,7 @@ export function ListView({
                       )}
                     </div>
                   </div>
-  
+
                   {/* Seção Faltando */}
                   <div className={`flex flex-col ${activeListTab === 'pending' ? 'flex' : 'hidden md:flex'}`}>
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#ff9f0a] shrink-0 text-xs sm:text-sm">
@@ -882,7 +960,7 @@ export function ListView({
                       )}
                     </div>
                   </div>
-  
+
                 </div>
               </div>
             )}

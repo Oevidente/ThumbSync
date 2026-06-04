@@ -22,7 +22,8 @@ import {
   playChimeSound,
   getNotificationPermissionState,
   requestNotificationPermission,
-  triggerNativeNotification
+  triggerNativeNotification,
+  startSwBackgroundPolling
 } from './utils/notificationSystem';
 
 export default function App() {
@@ -44,7 +45,7 @@ export default function App() {
   // Notification states
   const [inAppNotification, setInAppNotification] = useState<{ title: string; body: string; timestamp: string } | null>(null);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-  
+
   // Ref to track game list for updates (detecting additions, deletions, etc.)
   const prevGamesRef = useRef<{ displayName: string; normalized: string; providerName: string }[] | null>(null);
 
@@ -89,6 +90,43 @@ export default function App() {
   // Initialize notification permission state in client
   useEffect(() => {
     setNotificationPermission(getNotificationPermissionState());
+  }, []);
+
+  // Iniciar polling em background via SW quando a permissão for concedida
+  useEffect(() => {
+    if (notificationPermission === 'granted') {
+      // Calcula hash atual para passar como baseline ao SW
+      const ready = analysisData?.gameListData?.readyGames || [];
+      const remaining = analysisData?.gameListData?.remainingGames || [];
+      const all = [...ready, ...remaining];
+      const hash = all
+        .map((g: any) => `${g.providerName || ''}::${g.normalized || ''}`)
+        .sort()
+        .join('|');
+      startSwBackgroundPolling(hash || null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notificationPermission]);
+
+  // Escutar mensagens vindas do SW (detecção de mudança em background)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'THUMBSYNC_CHANGE_DETECTED') {
+        const { title, body } = event.data;
+        // Tocar chime se a aba estiver visível (SW já emitiu a notificação nativa)
+        if (document.visibilityState === 'visible') {
+          playChimeSound();
+        }
+        setInAppNotification({
+          title,
+          body,
+          timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        });
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
   }, []);
 
   // Dismiss banner automatically after 6 seconds
@@ -136,7 +174,7 @@ export default function App() {
     }
 
     const prevGames = prevGamesRef.current;
-    
+
     // Check item equality by identifying strings
     const serializeGame = (g: any) => `${g.providerName || 'Sem provedor'}::${g.normalized || ''}`;
     const prevKeys = prevGames.map(serializeGame);
@@ -376,12 +414,13 @@ export default function App() {
   }, [isServerOnline, hasPendingSync, syncingOfflineChanges, syncOfflineChangesToServer]);
 
   // Continuous background status polling (Runs every 5s keeping interfaces crisp)
+  // Nota: notificações em background são feitas pelo SW via startSwBackgroundPolling
   useEffect(() => {
     const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        runAnalysis(true);
-        setHasPendingSync(getPendingChangesFlag());
-      }
+      // Removida a trava de visibilidade para permitir polling e notificações 
+      // mesmo quando a aba está em segundo plano.
+      runAnalysis(true);
+      setHasPendingSync(getPendingChangesFlag());
     }, 5000);
 
     return () => clearInterval(timer);
@@ -436,9 +475,9 @@ export default function App() {
         );
       case 'settings':
         return (
-          <SettingsView 
-            config={config} 
-            onSave={fetchConfig} 
+          <SettingsView
+            config={config}
+            onSave={fetchConfig}
             notificationPermission={notificationPermission}
             setNotificationPermission={setNotificationPermission}
           />
@@ -501,17 +540,17 @@ export default function App() {
           </svg>
 
           {/* Liquid organic fluid gradients, distorted heavily by the SVG filter */}
-          <div 
+          <div
             className="absolute inset-[-20%] opacity-85 transition-opacity duration-1000 ease-in-out"
             style={{ filter: "url(#bg-liquid-filter) blur(60px)" }}
           >
             {/* Asymmetrical fluid color sources pulsating faster like ARGB */}
             <div className="absolute top-[10%] left-[10%] w-[55vw] h-[55vw] rounded-full bg-gradient-to-tr from-[#0a84ff]/[0.5] to-[#15e6cd]/[0.3] mix-blend-screen animate-[drift-blob_12s_ease-in-out_infinite]" />
-            
+
             <div className="absolute top-[35%] right-[5%] w-[50vw] h-[50vw] rounded-full bg-[#30d158]/[0.4] mix-blend-screen animate-[drift-blob-reverse_15s_ease-in-out_infinite]" />
-            
+
             <div className="absolute bottom-[5%] left-[25%] w-[60vw] h-[60vw] rounded-full bg-[#bf5af2]/[0.4] mix-blend-screen animate-[drift-blob_18s_ease-in-out_infinite_reverse]" />
-            
+
             <div className="absolute top-[40%] left-[40%] w-[35vw] h-[35vw] rounded-full bg-[#ff9f0a]/[0.2] mix-blend-screen animate-[drift-blob-reverse_10s_ease-in-out_infinite]" />
           </div>
         </div>
@@ -519,7 +558,7 @@ export default function App() {
 
       {/* Custom Background Image Layer */}
       {bgEnabled && bgPath && (
-        <div 
+        <div
           className="fixed inset-0 z-0 pointer-events-none transition-all duration-500 ease-in-out bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url(/api/image?path=${encodeURIComponent(bgPath)})`,
@@ -530,9 +569,9 @@ export default function App() {
         />
       )}
 
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         isServerOnline={isServerOnline}
         hasPendingSync={hasPendingSync}
         canInstall={!!deferredPrompt}
@@ -542,9 +581,9 @@ export default function App() {
       {/* Mobile Sticky Header */}
       <header className="md:hidden sticky top-0 z-40 bg-[#070709]/85 backdrop-blur-xl border-b border-white/[0.05] px-5 py-4 flex items-center justify-between shadow-[0_4px_30px_rgba(0,0,0,0.5)] select-none">
         <div className="flex items-center gap-2.5">
-          <img 
-            src="./logodosite.jpg" 
-            alt="ThumbSync Logo" 
+          <img
+            src="./logodosite.jpg"
+            alt="ThumbSync Logo"
             className="w-6 h-6 rounded-lg shadow-[0_0_15px_rgba(10,132,255,0.45)] object-cover"
           />
           <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
@@ -600,9 +639,8 @@ export default function App() {
               onClick={() => setActiveTab(item.id)}
               title={item.label}
               aria-label={item.label}
-              className={`flex items-center justify-center flex-1 h-full rounded-xl transition-all relative ${
-                isActive ? 'text-[#0a84ff]' : 'text-zinc-500 hover:text-white'
-              }`}
+              className={`flex items-center justify-center flex-1 h-full rounded-xl transition-all relative ${isActive ? 'text-[#0a84ff]' : 'text-zinc-500 hover:text-white'
+                }`}
             >
               <item.icon className={`w-[20px] h-[20px] transition-transform ${isActive ? 'text-[#0a84ff] drop-shadow-[0_0_12px_rgba(10,132,255,0.7)] scale-110' : 'text-zinc-500'}`} />
             </button>
@@ -622,7 +660,7 @@ export default function App() {
               className="w-full max-w-md bg-zinc-900/95 border-t border-white/[0.08] rounded-t-3xl p-6 pb-10 shadow-2xl relative select-none font-sans"
             >
               <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-5" />
-              
+
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Maximize className="w-5 h-5 text-[#0a84ff]" />
@@ -684,7 +722,7 @@ export default function App() {
             className="fixed top-20 right-6 z-[100] max-w-sm w-full bg-[#1c1c1e]/90 backdrop-blur-xl border border-emerald-500/20 shadow-2xl rounded-2xl p-4 flex items-center gap-3.5 select-none text-white font-sans text-left"
           >
             <div className="w-[38px] h-[38px] overflow-hidden rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center shrink-0">
-               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="text-xs font-black tracking-wide leading-normal">
@@ -709,13 +747,13 @@ export default function App() {
             className="fixed top-6 left-4 right-4 md:left-auto md:right-6 md:w-[380px] z-[999] bg-[#161618]/80 backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_45px_rgba(0,0,0,0.7)] rounded-2xl p-4 flex items-start gap-3.5 select-none font-sans text-white"
           >
             <div className="w-[38px] h-[38px] shrink-0 overflow-hidden rounded-xl bg-[#0a84ff]/10 border border-[#0a84ff]/20 flex items-center justify-center">
-              <img 
-                src="./logodosite.jpg" 
-                alt="Logo" 
+              <img
+                src="./logodosite.jpg"
+                alt="Logo"
                 className="w-full h-full object-cover"
               />
             </div>
-            
+
             <div className="min-w-0 flex-1 space-y-1 text-left">
               <div className="flex items-center justify-between gap-1.5">
                 <h4 className="text-xs font-extrabold text-white tracking-tight truncate">
