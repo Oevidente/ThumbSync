@@ -46,6 +46,43 @@ function createProviderGameKey(
   return `${normalizeGameName(providerName || 'Sem provedor')}::${normalizedGameName}`;
 }
 
+const gameNameCollator = new Intl.Collator('pt-BR', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+function getGameNameForSort(game: any) {
+  return String(game?.displayName || game?.normalized || '').trim();
+}
+
+function getGameFamilySortKey(gameName = '') {
+  const normalized = normalizeGameName(gameName);
+  const withoutStandaloneNumbers = normalized
+    .replace(/(^|\s)\d+(?=\s|$)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return withoutStandaloneNumbers || normalized;
+}
+
+function sortGamesBySimilarName(games: any[] = []) {
+  return [...games].sort((a, b) => {
+    const aName = getGameNameForSort(a);
+    const bName = getGameNameForSort(b);
+    const familyComparison = gameNameCollator.compare(
+      getGameFamilySortKey(aName),
+      getGameFamilySortKey(bName),
+    );
+
+    if (familyComparison !== 0) return familyComparison;
+
+    return (
+      gameNameCollator.compare(normalizeGameName(aName), normalizeGameName(bName)) ||
+      gameNameCollator.compare(aName, bName)
+    );
+  });
+}
+
 function getGameImageSearchUrl(providerName = '', gameDisplayName = '') {
   const usableProvider =
     normalizeGameName(providerName) === normalizeGameName('Sem provedor')
@@ -97,6 +134,10 @@ function ListViewProviderGroup({
   onRemoveGame: (providerName: string, gameDisplayName: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const sortedGames = useMemo(
+    () => sortGamesBySimilarName(group.games || []),
+    [group.games],
+  );
 
   return (
     <div className="space-y-2.5">
@@ -126,7 +167,7 @@ function ListViewProviderGroup({
 
       {isExpanded && (
         <div className="space-y-2 pl-2 border-l border-white/[0.05] ml-4 md:ml-5">
-          {group.games?.map((game: any, i: number) => {
+          {sortedGames.map((game: any, i: number) => {
             const providerName = game.providerName || group.providerName;
 
             if (isReadySection) {
