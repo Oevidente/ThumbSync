@@ -14,7 +14,7 @@ import {
   RefreshCw,
   Upload,
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { playChimeSound, triggerNativeNotification } from "../utils/notificationSystem";
@@ -44,6 +44,42 @@ function createProviderGameKey(
   normalizedGameName: string,
 ) {
   return `${normalizeGameName(providerName || 'Sem provedor')}::${normalizedGameName}`;
+}
+
+function getGameImageSearchUrl(providerName = '', gameDisplayName = '') {
+  const usableProvider =
+    normalizeGameName(providerName) === normalizeGameName('Sem provedor')
+      ? ''
+      : providerName;
+  const query = [usableProvider, gameDisplayName]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  const params = new URLSearchParams({ udm: '2', q: query });
+
+  return `https://www.google.com/search?${params.toString()}`;
+}
+
+function GameSearchLink({
+  providerName,
+  gameDisplayName,
+}: {
+  providerName: string;
+  gameDisplayName: string;
+}) {
+  const href = getGameImageSearchUrl(providerName, gameDisplayName);
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={`Buscar imagens de ${providerName} ${gameDisplayName}`}
+      className="min-w-0 flex-1 truncate pr-1 rounded text-current underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+    >
+      {gameDisplayName}
+    </a>
+  );
 }
 
 function ListViewProviderGroup({
@@ -118,7 +154,10 @@ function ListViewProviderGroup({
                       : 'bg-[#0a84ff]/5 border-[#0a84ff]/12 text-zinc-300 hover:text-white'
                     }`}
                 >
-                  <span className="truncate pr-1">{game.displayName}</span>
+                  <GameSearchLink
+                    providerName={providerName}
+                    gameDisplayName={game.displayName}
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -139,7 +178,10 @@ function ListViewProviderGroup({
                   key={`${game.displayName}-${i}`}
                   className="group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl bg-[#ff9f0a]/5 border border-[#ff9f0a]/12 text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px]"
                 >
-                  <span className="truncate pr-1">{game.displayName}</span>
+                  <GameSearchLink
+                    providerName={providerName}
+                    gameDisplayName={game.displayName}
+                  />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -316,7 +358,7 @@ export function ListView({
     }
   };
 
-  const handleCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCsvImport = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
