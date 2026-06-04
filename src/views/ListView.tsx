@@ -46,8 +46,13 @@ function createProviderGameKey(
   return `${normalizeGameName(providerName || 'Sem provedor')}::${normalizedGameName}`;
 }
 
-const gameNameCollator = new Intl.Collator('pt-BR', {
+const gameFamilyCollator = new Intl.Collator('pt-BR', {
   numeric: true,
+  sensitivity: 'base',
+});
+
+const gameAlphabeticCollator = new Intl.Collator('pt-BR', {
+  numeric: false,
   sensitivity: 'base',
 });
 
@@ -69,7 +74,7 @@ function sortGamesBySimilarName(games: any[] = []) {
   return [...games].sort((a, b) => {
     const aName = getGameNameForSort(a);
     const bName = getGameNameForSort(b);
-    const familyComparison = gameNameCollator.compare(
+    const familyComparison = gameFamilyCollator.compare(
       getGameFamilySortKey(aName),
       getGameFamilySortKey(bName),
     );
@@ -77,8 +82,8 @@ function sortGamesBySimilarName(games: any[] = []) {
     if (familyComparison !== 0) return familyComparison;
 
     return (
-      gameNameCollator.compare(normalizeGameName(aName), normalizeGameName(bName)) ||
-      gameNameCollator.compare(aName, bName)
+      gameAlphabeticCollator.compare(normalizeGameName(aName), normalizeGameName(bName)) ||
+      gameAlphabeticCollator.compare(aName, bName)
     );
   });
 }
