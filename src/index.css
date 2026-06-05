@@ -1,12 +1,9 @@
-/* Remova qualquer @import de fonts.googleapis.com que possa estar acima desta linha */
 @import "tailwindcss";
 
 @theme {
-  /* Definimos a SF Pro Text como prioridade absoluta para a classe font-sans */
-  --font-sans: "SF Pro Text", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
   --font-mono: "SF Mono", "SFProMono-Regular", "JetBrains Mono", "Fira Code", monospace;
-  --font-rounded: "SF Pro Rounded", "SF Pro Text", -apple-system, sans-serif;
-
+  --font-rounded: "SF Pro Rounded", "SF Pro Text", sans-serif;
   --color-fluent-bg: #09090b;
   --color-fluent-glass: rgba(18, 18, 22, 0.45);
   --color-fluent-border: rgba(255, 255, 255, 0.08);

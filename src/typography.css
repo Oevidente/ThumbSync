@@ -6,36 +6,36 @@
 /* SF Pro Display - Usada para tamanhos >= 20pt */
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('../public/fonts/SF-Pro-Display-Regular.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Display-Regular.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Regular.otf') format('opentype'),
+        url('/fonts/SF-Pro-Display-Regular.ttf') format('truetype');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('../public/fonts/SF-Pro-Display-Medium.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Display-Medium.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Medium.otf') format('opentype'),
+        url('/fonts/SF-Pro-Display-Medium.ttf') format('truetype');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('../public/fonts/SF-Pro-Display-Semibold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Display-Semibold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Semibold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Display-Semibold.ttf') format('truetype');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('../public/fonts/SF-Pro-Display-Bold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Display-Bold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Bold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Display-Bold.ttf') format('truetype');
     font-weight: 700;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('../public/fonts/SF-Pro-Display-Black.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Display-Black.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Black.otf') format('opentype'),
+        url('/fonts/SF-Pro-Display-Black.ttf') format('truetype');
     font-weight: 900;
 }
 
@@ -43,86 +43,65 @@
 /* SF Pro Rounded - Aplicando os arquivos da pasta fonts */
 @font-face {
     font-family: 'SF Pro Rounded';
-    src: url('../public/fonts/SF-Pro-Rounded-Regular.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Rounded-Regular.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Rounded-Regular.otf') format('opentype'),
+        url('/fonts/SF-Pro-Rounded-Regular.ttf') format('truetype');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SF Pro Rounded';
-    src: url('../public/fonts/SF-Pro-Rounded-Medium.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Rounded-Medium.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Rounded-Medium.otf') format('opentype'),
+        url('/fonts/SF-Pro-Rounded-Medium.ttf') format('truetype');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SF Pro Rounded';
-    src: url('../public/fonts/SF-Pro-Rounded-Semibold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Rounded-Semibold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Rounded-Semibold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Rounded-Semibold.ttf') format('truetype');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SF Pro Rounded';
-    src: url('../public/fonts/SF-Pro-Rounded-Bold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Rounded-Bold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Rounded-Bold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Rounded-Bold.ttf') format('truetype');
     font-weight: 700;
 }
 
 @font-face {
     font-family: 'SF Pro Rounded';
-    src: url('../public/fonts/SF-Pro-Rounded-Black.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Rounded-Black.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Rounded-Black.otf') format('opentype'),
+        url('/fonts/SF-Pro-Rounded-Black.ttf') format('truetype');
     font-weight: 900;
 }
 
 /* SF Pro Text - Usada para tamanhos < 20pt */
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Regular.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Regular.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Regular.otf') format('opentype'),
+        url('/fonts/SF-Pro-Text-Regular.ttf') format('truetype');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Medium.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Medium.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Medium.otf') format('opentype'),
+        url('/fonts/SF-Pro-Text-Medium.ttf') format('truetype');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Semibold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Semibold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Semibold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Text-Semibold.ttf') format('truetype');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Regular.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Regular.ttf') format('truetype');
-    font-weight: 700;
-}
-
-@font-face {
-    font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Medium.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Medium.ttf') format('truetype');
-    font-weight: 500;
-}
-
-@font-face {
-    font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Semibold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Semibold.ttf') format('truetype');
-    font-weight: 600;
-}
-
-@font-face {
-    font-family: 'SF Pro Text';
-    src: url('../public/fonts/SF-Pro-Text-Bold.otf') format('opentype'),
-        url('../public/fonts/SF-Pro-Text-Bold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Bold.otf') format('opentype'),
+        url('/fonts/SF-Pro-Text-Bold.ttf') format('truetype');
     font-weight: 700;
 }
 
