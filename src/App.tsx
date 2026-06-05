@@ -586,7 +586,7 @@ export default function App() {
             alt="ThumbSync Logo"
             className="w-6 h-6 rounded-lg shadow-[0_0_15px_rgba(10,132,255,0.45)] object-cover"
           />
-          <span className="font-black text-sm tracking-tight text-white font-rounded">ThumbSync</span>
+          <span className="font-extrabold text-sm tracking-tight text-white font-sans">ThumbSync</span>
         </div>
         <div className="flex items-center gap-2.5">
           {deferredPrompt && (

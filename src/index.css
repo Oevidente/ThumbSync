@@ -1,9 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  --font-sans: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
   --font-mono: "SF Mono", "SFProMono-Regular", "JetBrains Mono", "Fira Code", monospace;
-  --font-rounded: "SF Pro Rounded", "SF Pro Text", sans-serif;
   --color-fluent-bg: #09090b;
   --color-fluent-glass: rgba(18, 18, 22, 0.45);
   --color-fluent-border: rgba(255, 255, 255, 0.08);
@@ -20,73 +20,25 @@
 }
 
 @keyframes drift-blob {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.6;
-    filter: hue-rotate(0deg);
-  }
-
-  25% {
-    transform: translate(50px, -30px) scale(1.2);
-    opacity: 0.9;
-    filter: hue-rotate(90deg);
-  }
-
-  50% {
-    transform: translate(20px, 60px) scale(0.9);
-    opacity: 0.7;
-    filter: hue-rotate(180deg);
-  }
-
-  75% {
-    transform: translate(-40px, -20px) scale(1.1);
-    opacity: 1;
-    filter: hue-rotate(270deg);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.6;
-    filter: hue-rotate(360deg);
-  }
+  0% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: hue-rotate(0deg); }
+  25% { transform: translate(50px, -30px) scale(1.2); opacity: 0.9; filter: hue-rotate(90deg); }
+  50% { transform: translate(20px, 60px) scale(0.9); opacity: 0.7; filter: hue-rotate(180deg); }
+  75% { transform: translate(-40px, -20px) scale(1.1); opacity: 1; filter: hue-rotate(270deg); }
+  100% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: hue-rotate(360deg); }
 }
 
 @keyframes drift-blob-reverse {
-  0% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.6;
-    filter: hue-rotate(0deg);
-  }
-
-  25% {
-    transform: translate(-50px, 30px) scale(1.1);
-    opacity: 0.9;
-    filter: hue-rotate(-90deg);
-  }
-
-  50% {
-    transform: translate(40px, -50px) scale(0.85);
-    opacity: 0.7;
-    filter: hue-rotate(-180deg);
-  }
-
-  75% {
-    transform: translate(30px, 40px) scale(1.15);
-    opacity: 1;
-    filter: hue-rotate(-270deg);
-  }
-
-  100% {
-    transform: translate(0px, 0px) scale(1);
-    opacity: 0.6;
-    filter: hue-rotate(-360deg);
-  }
+  0% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: hue-rotate(0deg); }
+  25% { transform: translate(-50px, 30px) scale(1.1); opacity: 0.9; filter: hue-rotate(-90deg); }
+  50% { transform: translate(40px, -50px) scale(0.85); opacity: 0.7; filter: hue-rotate(-180deg); }
+  75% { transform: translate(30px, 40px) scale(1.15); opacity: 1; filter: hue-rotate(-270deg); }
+  100% { transform: translate(0px, 0px) scale(1); opacity: 0.6; filter: hue-rotate(-360deg); }
 }
 
 .acrylic {
   backdrop-filter: blur(35px);
   -webkit-backdrop-filter: blur(35px);
-  @apply bg-[#151518]/50 border border-white/[0.08] shadow-[0_12px_45px_0_rgba(0, 0, 0, 0.45)];
+  @apply bg-[#151518]/50 border border-white/[0.08] shadow-[0_12px_45px_0_rgba(0,0,0,0.45)];
 }
 
 .mica {
@@ -114,9 +66,10 @@
 }
 
 .glass-btn-primary {
-  @apply flex items-center justify-center gap-2 bg-gradient-to-b from-[#0a84ff] to-[#0070e0] text-white hover:from-[#2191ff] hover:to-[#0a84ff] hover:shadow-[0_4px_16px_rgba(10, 132, 255, 0.4)] px-5 py-2.5 rounded-xl font-bold transition-all active:scale-[0.98] border border-white/10 font-rounded;
+  @apply flex items-center justify-center gap-2 bg-gradient-to-b from-[#0a84ff] to-[#0070e0] text-white hover:from-[#2191ff] hover:to-[#0a84ff] hover:shadow-[0_4px_16px_rgba(10,132,255,0.4)] px-5 py-2.5 rounded-xl font-semibold transition-all active:scale-[0.98] border border-white/10;
 }
 
 .glass-btn-secondary {
-  @apply flex items-center justify-center gap-2 bg-white/[0.04] text-white hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/10 px-5 py-2.5 rounded-xl font-bold transition-all active:scale-[0.98] font-rounded;
+  @apply flex items-center justify-center gap-2 bg-white/[0.04] text-white hover:bg-white/[0.08] border border-white/[0.06] hover:border-white/10 px-5 py-2.5 rounded-xl font-semibold transition-all active:scale-[0.98];
 }
+

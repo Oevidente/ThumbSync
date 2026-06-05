@@ -6,109 +6,62 @@
 /* SF Pro Display - Usada para tamanhos >= 20pt */
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display-Regular.otf') format('opentype'),
-        url('/fonts/SF-Pro-Display-Regular.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Regular.woff2') format('woff2');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display-Medium.otf') format('opentype'),
-        url('/fonts/SF-Pro-Display-Medium.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Medium.woff2') format('woff2');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display-Semibold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Display-Semibold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Semibold.woff2') format('woff2');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display-Bold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Display-Bold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Bold.woff2') format('woff2');
     font-weight: 700;
 }
 
 @font-face {
     font-family: 'SF Pro Display';
-    src: url('/fonts/SF-Pro-Display-Black.otf') format('opentype'),
-        url('/fonts/SF-Pro-Display-Black.ttf') format('truetype');
-    font-weight: 900;
-}
-
-/* SF Pro Rounded - Aplicando os arquivos da pasta @fontes */
-/* SF Pro Rounded - Aplicando os arquivos da pasta fonts */
-@font-face {
-    font-family: 'SF Pro Rounded';
-    src: url('/fonts/SF-Pro-Rounded-Regular.otf') format('opentype'),
-        url('/fonts/SF-Pro-Rounded-Regular.ttf') format('truetype');
-    font-weight: 400;
-}
-
-@font-face {
-    font-family: 'SF Pro Rounded';
-    src: url('/fonts/SF-Pro-Rounded-Medium.otf') format('opentype'),
-        url('/fonts/SF-Pro-Rounded-Medium.ttf') format('truetype');
-    font-weight: 500;
-}
-
-@font-face {
-    font-family: 'SF Pro Rounded';
-    src: url('/fonts/SF-Pro-Rounded-Semibold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Rounded-Semibold.ttf') format('truetype');
-    font-weight: 600;
-}
-
-@font-face {
-    font-family: 'SF Pro Rounded';
-    src: url('/fonts/SF-Pro-Rounded-Bold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Rounded-Bold.ttf') format('truetype');
-    font-weight: 700;
-}
-
-@font-face {
-    font-family: 'SF Pro Rounded';
-    src: url('/fonts/SF-Pro-Rounded-Black.otf') format('opentype'),
-        url('/fonts/SF-Pro-Rounded-Black.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Display-Black.woff2') format('woff2');
     font-weight: 900;
 }
 
 /* SF Pro Text - Usada para tamanhos < 20pt */
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('/fonts/SF-Pro-Text-Regular.otf') format('opentype'),
-        url('/fonts/SF-Pro-Text-Regular.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Regular.woff2') format('woff2');
     font-weight: 400;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('/fonts/SF-Pro-Text-Medium.otf') format('opentype'),
-        url('/fonts/SF-Pro-Text-Medium.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Medium.woff2') format('woff2');
     font-weight: 500;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('/fonts/SF-Pro-Text-Semibold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Text-Semibold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Semibold.woff2') format('woff2');
     font-weight: 600;
 }
 
 @font-face {
     font-family: 'SF Pro Text';
-    src: url('/fonts/SF-Pro-Text-Bold.otf') format('opentype'),
-        url('/fonts/SF-Pro-Text-Bold.ttf') format('truetype');
+    src: url('/fonts/SF-Pro-Text-Bold.woff2') format('woff2');
     font-weight: 700;
 }
 
 :root {
     --font-sf-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
     --font-sf-text: 'SF Pro Text', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-    --font-sf-rounded: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 html,
@@ -125,19 +78,15 @@ body {
     font-family: var(--font-sf-text) !important;
 }
 
-.font-rounded {
-    font-family: var(--font-sf-rounded) !important;
-}
-
 /* 
  * Mapeamento de Escalas Apple HIG (Large System Size)
  * Convertidos para REM (Base 16px) para suporte a Dynamic Type
  */
 
-/* Large Title (34pt) - Aplicando Rounded para um look mais orgânico */
+/* Large Title (34pt) */
 .text-4xl,
 .text-3xl {
-    font-family: var(--font-sf-rounded) !important;
+    font-family: var(--font-sf-display) !important;
     font-size: 2.125rem !important;
     /* 34px */
     line-height: 1.205 !important;
