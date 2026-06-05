@@ -1,0 +1,164 @@
+/* 
+ * Apple San Francisco Pro Typography System
+ * Seguindo Apple Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines/typography
+ */
+
+/* SF Pro Display - Usada para tamanhos >= 20pt */
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Regular.woff2') format('woff2');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Medium.woff2') format('woff2');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Semibold.woff2') format('woff2');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Bold.woff2') format('woff2');
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: 'SF Pro Display';
+    src: url('/fonts/SF-Pro-Display-Black.woff2') format('woff2');
+    font-weight: 900;
+}
+
+/* SF Pro Text - Usada para tamanhos < 20pt */
+@font-face {
+    font-family: 'SF Pro Text';
+    src: url('/fonts/SF-Pro-Text-Regular.woff2') format('woff2');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: 'SF Pro Text';
+    src: url('/fonts/SF-Pro-Text-Medium.woff2') format('woff2');
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: 'SF Pro Text';
+    src: url('/fonts/SF-Pro-Text-Semibold.woff2') format('woff2');
+    font-weight: 600;
+}
+
+@font-face {
+    font-family: 'SF Pro Text';
+    src: url('/fonts/SF-Pro-Text-Bold.woff2') format('woff2');
+    font-weight: 700;
+}
+
+:root {
+    --font-sf-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    --font-sf-text: 'SF Pro Text', -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+}
+
+html,
+body {
+    /* Garante que 1rem = tamanho de fonte definido pelo usuário/navegador */
+    font-size: 100%;
+    font-family: var(--font-sf-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03", "tnum";
+}
+
+.font-sans {
+    font-family: var(--font-sf-text) !important;
+}
+
+/* 
+ * Mapeamento de Escalas Apple HIG (Large System Size)
+ * Convertidos para REM (Base 16px) para suporte a Dynamic Type
+ */
+
+/* Large Title (34pt) */
+.text-4xl,
+.text-3xl {
+    font-family: var(--font-sf-display) !important;
+    font-size: 2.125rem !important;
+    /* 34px */
+    line-height: 1.205 !important;
+    /* 41px */
+    letter-spacing: 0.011em !important;
+    /* 0.37px */
+}
+
+/* Title 1 (28pt) */
+.text-2xl {
+    font-family: var(--font-sf-display) !important;
+    font-size: 1.75rem !important;
+    /* 28px */
+    line-height: 1.214 !important;
+    /* 34px */
+    letter-spacing: 0.013em !important;
+    /* 0.36px */
+}
+
+/* Title 2 (22pt) */
+.text-xl {
+    font-family: var(--font-sf-display) !important;
+    font-size: 1.375rem !important;
+    /* 22px */
+    line-height: 1.272 !important;
+    /* 28px */
+    letter-spacing: 0.016em !important;
+    /* 0.35px */
+}
+
+/* Title 3 (20pt) - Ponto de virada para Display */
+.text-lg {
+    font-family: var(--font-sf-display) !important;
+    font-size: 1.25rem !important;
+    /* 20px */
+    line-height: 1.25 !important;
+    /* 25px */
+    letter-spacing: 0.019em !important;
+    /* 0.38px */
+}
+
+/* Body / Headline (17pt) */
+.text-base {
+    font-family: var(--font-sf-text) !important;
+    font-size: 1.0625rem !important;
+    /* 17px */
+    line-height: 1.294 !important;
+    /* 22px */
+    letter-spacing: -0.024em !important;
+    /* -0.41px */
+}
+
+/* Subheadline (15pt) */
+.text-sm {
+    font-family: var(--font-sf-text) !important;
+    font-size: 0.9375rem !important;
+    /* 15px */
+    line-height: 1.333 !important;
+    /* 20px */
+    letter-spacing: -0.015em !important;
+    /* -0.23px */
+}
+
+/* Footnote (13pt) e Captions */
+.text-xs,
+.text-\[10px\],
+.text-\[11px\] {
+    font-family: var(--font-sf-text) !important;
+    font-size: 0.8125rem !important;
+    /* 13px */
+    line-height: 1.384 !important;
+    /* 18px */
+    letter-spacing: -0.006em !important;
+    /* -0.08px */
+}
