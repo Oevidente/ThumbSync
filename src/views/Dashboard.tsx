@@ -111,6 +111,48 @@ function getProviderGroups(
   return games?.length ? [{ providerName: 'Sem provedor', games }] : [];
 }
 
+const gameFamilyCollator = new Intl.Collator('pt-BR', {
+  numeric: true,
+  sensitivity: 'base',
+});
+
+const gameAlphabeticCollator = new Intl.Collator('pt-BR', {
+  numeric: false,
+  sensitivity: 'base',
+});
+
+function getGameNameForSort(game: any) {
+  return String(game?.displayName || game?.normalized || '').trim();
+}
+
+function getGameFamilySortKey(gameName = '') {
+  const normalized = normalizeGameName(gameName);
+  const withoutStandaloneNumbers = normalized
+    .replace(/(^|\s)\d+(?=\s|$)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return withoutStandaloneNumbers || normalized;
+}
+
+function sortGamesBySimilarName(games: any[] = []) {
+  return [...games].sort((a, b) => {
+    const aName = getGameNameForSort(a);
+    const bName = getGameNameForSort(b);
+    const familyComparison = gameFamilyCollator.compare(
+      getGameFamilySortKey(aName),
+      getGameFamilySortKey(bName),
+    );
+
+    if (familyComparison !== 0) return familyComparison;
+
+    return (
+      gameAlphabeticCollator.compare(normalizeGameName(aName), normalizeGameName(bName)) ||
+      gameAlphabeticCollator.compare(aName, bName)
+    );
+  });
+}
+
 function DashboardProviderGroupItem({
   title,
   group,
@@ -126,6 +168,10 @@ function DashboardProviderGroupItem({
   sentData?: { keys: Set<string>; names: Set<string> };
 }) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const sortedGames = useMemo(
+    () => sortGamesBySimilarName(group.games || []),
+    [group.games],
+  );
 
   return (
     <div className="space-y-2">
@@ -150,7 +196,7 @@ function DashboardProviderGroupItem({
 
       {isExpanded && (
         <div className="space-y-1.5 pl-2 border-l border-white/[0.05] ml-4.5">
-          {group.games?.map((game: any, i: number) => {
+          {sortedGames.map((game: any, i: number) => {
             const normalizedName =
               game.normalized || normalizeGameName(game.displayName);
             const providerName = game.providerName || group.providerName;
