@@ -1351,10 +1351,10 @@ async function startServer() {
         currentCopyState.currentFileWaiting = file.relativePath.split('/').pop();
 
         if (delay > 0) {
-          const step = 2000;
-          for (let waited = 0; waited < delay; waited += step) {
+          while (Date.now() < currentCopyState.nextCopyAt) {
             if (!currentCopyState || currentCopyState.status !== 'running') return;
-            await new Promise(r => setTimeout(r, Math.min(step, delay - waited)));
+            const remaining = currentCopyState.nextCopyAt - Date.now();
+            await new Promise(r => setTimeout(r, Math.min(2000, remaining)));
           }
         }
 
@@ -1477,10 +1477,25 @@ async function startServer() {
 
           // Scan directories
           const data = collectComparisonData(source, dest);
-          let pendingFiles = buildCopyQueue(data.pendingFiles, settings);
+          let allPendingFiles = buildCopyQueue(data.pendingFiles, settings);
 
+          if (!currentCopyState.initializedSeenFiles) {
+            currentCopyState.initializedSeenFiles = true;
+            currentCopyState.seenFiles = new Set<string>();
+            allPendingFiles.forEach(f => currentCopyState.seenFiles.add(f.relativePath));
+          }
+
+          let pendingFiles = allPendingFiles;
           if (settings.watchBatchEnabled && typeof settings.watchBatchLimit === 'number' && settings.watchBatchLimit > 0) {
-            pendingFiles = pendingFiles.slice(0, settings.watchBatchLimit);
+            const currentLimit = Math.max(0, settings.watchBatchLimit - currentCopyState.copied);
+            if (currentLimit === 0) {
+              currentCopyState.status = 'finished';
+              currentCopyState.progress = 100;
+              currentCopyState.nextCopyAt = 0;
+              currentCopyState.currentFileWaiting = null;
+              break;
+            }
+            pendingFiles = pendingFiles.slice(0, currentLimit);
           }
 
           if (pendingFiles.length === 0) {
@@ -1498,6 +1513,15 @@ async function startServer() {
           // Generate unique queue signature (combining paths and modification times) to detect updates/additions
           const currentSignature = pendingFiles.map(f => `${getCopyQueueKey(f)}:${getFileModifiedAtMs(f)}`).join('|');
 
+          // Check if the NEXT file to copy is NEW
+          const nextFile = pendingFiles[0];
+          const isNextFileNew = !currentCopyState.seenFiles.has(nextFile.relativePath);
+
+          if (isNextFileNew) {
+            console.log(`[Standby] Novo arquivo detectado: ${nextFile.relativePath}`);
+            currentCopyState.seenFiles.add(nextFile.relativePath);
+          }
+
           // If signature changed OR we don't have a scheduled copy time yet, recalculate division of time
           if (currentSignature !== lastQueueSignature || currentCopyState.nextCopyAt === 0) {
             lastQueueSignature = currentSignature;
@@ -1505,7 +1529,10 @@ async function startServer() {
             const nowMs = Date.now();
             let delay = 0;
 
-            if (!settings.watchImmediateEnabled) {
+            if (settings.watchImmediateEnabled && isNextFileNew) {
+              console.log(`[Standby] Aplicando Modo Imediato ao novo arquivo: ${nextFile.relativePath}`);
+              delay = 0;
+            } else {
               const availableWindowMs = Math.max(0, win.endAt.getTime() - nowMs);
 
               let firstCopyDelayMs = 0;
@@ -1528,8 +1555,6 @@ async function startServer() {
 
             currentCopyState.nextCopyAt = nowMs + delay;
             currentCopyState.total = pendingFiles.length;
-
-            const nextFile = pendingFiles[0];
             currentCopyState.currentFileWaiting = nextFile.relativePath.split(/[\\/]/).pop();
 
             // Calculate progress
