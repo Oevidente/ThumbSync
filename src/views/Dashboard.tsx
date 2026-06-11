@@ -9,6 +9,7 @@ import {
   UploadCloud,
   ChevronDown,
   ChevronRight,
+  Copy,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Fragment, useMemo, useState } from 'react';
@@ -219,9 +220,29 @@ function DashboardProviderGroupItem({
             return (
               <div
                 key={`${title}-${group.providerName}-${game.displayName}-${i}`}
-                className={`py-2 px-3 rounded-lg border text-xs font-semibold font-sans truncate shadow-sm transition-all duration-200 hover:translate-x-0.5 ${itemClasses}`}
+                className={`group relative flex items-center justify-between py-2 pl-3 pr-9 rounded-lg border text-xs font-semibold font-sans shadow-sm transition-all duration-200 hover:translate-x-0.5 ${itemClasses}`}
               >
-                {game.displayName}
+                <span className="truncate flex-1 pr-1">{game.displayName}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    navigator.clipboard.writeText(game.displayName);
+                    window.dispatchEvent(
+                      new CustomEvent('thumbsync-show-notification', {
+                        detail: {
+                          title: 'Copiado! 📋',
+                          message: `"${game.displayName}" copiado para a área de transferência.`,
+                        },
+                      }),
+                    );
+                  }}
+                  title="Copiar nome do jogo"
+                  className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all duration-150 absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-md bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-white cursor-pointer active:scale-90"
+                >
+                  <Copy className="w-3.5 h-3.5 pointer-events-none" />
+                </button>
               </div>
             );
           })}

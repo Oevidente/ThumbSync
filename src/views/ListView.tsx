@@ -13,11 +13,15 @@ import {
   Trash2,
   RefreshCw,
   Upload,
+  Copy,
 } from 'lucide-react';
 import { useState, useEffect, useMemo, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { playChimeSound, triggerNativeNotification } from "../utils/notificationSystem";
+import {
+  playChimeSound,
+  triggerNativeNotification,
+} from '../utils/notificationSystem';
 import {
   getCachedListContent,
   saveLocalListContent,
@@ -82,8 +86,10 @@ function sortGamesBySimilarName(games: any[] = []) {
     if (familyComparison !== 0) return familyComparison;
 
     return (
-      gameAlphabeticCollator.compare(normalizeGameName(aName), normalizeGameName(bName)) ||
-      gameAlphabeticCollator.compare(aName, bName)
+      gameAlphabeticCollator.compare(
+        normalizeGameName(aName),
+        normalizeGameName(bName),
+      ) || gameAlphabeticCollator.compare(aName, bName)
     );
   });
 }
@@ -158,7 +164,8 @@ function ListViewProviderGroup({
           ) : (
             <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
           )}
-          Provedor: <span className="text-white font-black">{group.providerName}</span>
+          Provedor:{' '}
+          <span className="text-white font-black">{group.providerName}</span>
         </span>
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${isReadySection
@@ -195,7 +202,7 @@ function ListViewProviderGroup({
               return (
                 <div
                   key={`${game.displayName}-${i}`}
-                  className={`group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl border text-xs sm:text-sm font-semibold font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px] ${isSent
+                  className={`group relative flex items-center justify-between py-3 pl-3.5 pr-[4.5rem] rounded-xl border text-xs sm:text-sm font-semibold font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px] ${isSent
                       ? 'bg-[#30d158]/5 border-[#30d158]/12 text-[#30d158]'
                       : 'bg-[#0a84ff]/5 border-[#0a84ff]/12 text-zinc-300 hover:text-white'
                     }`}
@@ -204,42 +211,86 @@ function ListViewProviderGroup({
                     providerName={providerName}
                     gameDisplayName={game.displayName}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      onRemoveGame(providerName, game.displayName);
-                    }}
-                    title="Remover item da lista"
-                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] shrink-0 z-20 cursor-pointer active:scale-90"
-                  >
-                    <X className="w-3.5 h-3.5 pointer-events-none" />
-                  </button>
+                  <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 shrink-0 z-20">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        navigator.clipboard.writeText(game.displayName);
+                        window.dispatchEvent(
+                          new CustomEvent('thumbsync-show-notification', {
+                            detail: {
+                              title: 'Copiado! 📋',
+                              message: `"${game.displayName}" copiado para a área de transferência.`,
+                            },
+                          }),
+                        );
+                      }}
+                      title="Copiar nome do jogo"
+                      className="p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#0a84ff] cursor-pointer active:scale-90 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5 pointer-events-none" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        onRemoveGame(providerName, game.displayName);
+                      }}
+                      title="Remover item da lista"
+                      className="p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] cursor-pointer active:scale-90 transition-all"
+                    >
+                      <X className="w-3.5 h-3.5 pointer-events-none" />
+                    </button>
+                  </div>
                 </div>
               );
             } else {
               return (
                 <div
                   key={`${game.displayName}-${i}`}
-                  className="group relative flex items-center justify-between py-3 pl-3.5 pr-11 rounded-xl bg-[#ff9f0a]/5 border border-[#ff9f0a]/12 text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px]"
+                  className="group relative flex items-center justify-between py-3 pl-3.5 pr-[4.5rem] rounded-xl bg-[#ff9f0a]/5 border border-[#ff9f0a]/12 text-xs sm:text-sm font-semibold text-zinc-300 hover:text-white font-sans shadow-xs transition-transform duration-200 hover:translate-x-0.5 min-h-[44px]"
                 >
                   <GameSearchLink
                     providerName={providerName}
                     gameDisplayName={game.displayName}
                   />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      onRemoveGame(providerName, game.displayName);
-                    }}
-                    title="Remover item da lista"
-                    className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] shrink-0 z-20 cursor-pointer active:scale-90"
-                  >
-                    <X className="w-3.5 h-3.5 pointer-events-none" />
-                  </button>
+                  <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-all duration-150 absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 shrink-0 z-20">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        navigator.clipboard.writeText(game.displayName);
+                        window.dispatchEvent(
+                          new CustomEvent('thumbsync-show-notification', {
+                            detail: {
+                              title: 'Copiado! 📋',
+                              message: `"${game.displayName}" copiado para a área de transferência.`,
+                            },
+                          }),
+                        );
+                      }}
+                      title="Copiar nome do jogo"
+                      className="p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff9f0a] cursor-pointer active:scale-90 transition-all"
+                    >
+                      <Copy className="w-3.5 h-3.5 pointer-events-none" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        onRemoveGame(providerName, game.displayName);
+                      }}
+                      title="Remover item da lista"
+                      className="p-2 rounded-lg bg-white/[0.04] md:bg-transparent border border-white/[0.04] md:border-transparent text-zinc-400 hover:text-[#ff453a] cursor-pointer active:scale-90 transition-all"
+                    >
+                      <X className="w-3.5 h-3.5 pointer-events-none" />
+                    </button>
+                  </div>
                 </div>
               );
             }
@@ -272,11 +323,14 @@ export function ListView({
   const [isLoading, setIsLoading] = useState(false);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedProviderOption, setSelectedProviderOption] = useState<string>('Sem provedor');
+  const [selectedProviderOption, setSelectedProviderOption] =
+    useState<string>('Sem provedor');
   const [customProviderInput, setCustomProviderInput] = useState<string>('');
   const [gamesInput, setGamesInput] = useState('');
   const [isSavingMulti, setIsSavingMulti] = useState(false);
-  const [activeListTab, setActiveListTab] = useState<'pending' | 'ready'>('pending');
+  const [activeListTab, setActiveListTab] = useState<'pending' | 'ready'>(
+    'pending',
+  );
 
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -293,7 +347,8 @@ export function ListView({
     // 1. From comparedFiles (source / origin)
     if (comparedFiles) {
       comparedFiles.forEach((file: any) => {
-        const segments = file.relativePath?.split(/[\\/]/).filter(Boolean) || [];
+        const segments =
+          file.relativePath?.split(/[\\/]/).filter(Boolean) || [];
         if (segments.length > 1) {
           providersSet.add(segments[0]);
         }
@@ -324,7 +379,9 @@ export function ListView({
     // Clean, filter out 'Sem provedor', sort alphabetically
     const list = Array.from(providersSet)
       .map((name) => name.trim())
-      .filter((name) => name.length > 0 && name.toLowerCase() !== 'sem provedor');
+      .filter(
+        (name) => name.length > 0 && name.toLowerCase() !== 'sem provedor',
+      );
 
     list.sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
 
@@ -342,23 +399,26 @@ export function ListView({
         return data.content || '';
       }
     } catch (e) {
-      console.warn("Failed standard fetching of list content offline fallback triggered.", e);
+      console.warn(
+        'Failed standard fetching of list content offline fallback triggered.',
+        e,
+      );
     }
     return getCachedListContent();
   };
 
   const notifySync = () => {
     triggerNativeNotification(
-      "Lista Sincronizada",
-      "As alterações na lista de jogos foram salvas com sucesso!"
+      'Lista Sincronizada',
+      'As alterações na lista de jogos foram salvas com sucesso!',
     );
     window.dispatchEvent(
-      new CustomEvent("thumbsync-show-notification", {
+      new CustomEvent('thumbsync-show-notification', {
         detail: {
-          title: "Lista Sincronizada 🔄",
-          message: "As alterações foram salvas com sucesso!",
+          title: 'Lista Sincronizada 🔄',
+          message: 'As alterações foram salvas com sucesso!',
         },
-      })
+      }),
     );
     playChimeSound();
   };
@@ -384,7 +444,10 @@ export function ListView({
       notifySync();
       onRefresh();
     } catch (e) {
-      console.warn("Persistent save error offline queue fallback triggered.", e);
+      console.warn(
+        'Persistent save error offline queue fallback triggered.',
+        e,
+      );
       saveLocalListContent(updatedContent, true);
       if (onOfflineListEdit) onOfflineListEdit();
       notifySync();
@@ -411,15 +474,27 @@ export function ListView({
     setIsLoading(true);
     try {
       const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
       if (lines.length === 0) return;
 
       const delimiter = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+      const headers = lines[0]
+        .split(delimiter)
+        .map((h) => h.trim().toLowerCase());
 
       // Mapeamento inteligente de colunas
-      const targetKeywords = ['name', 'customname', 'jogo', 'titulo', 'title', 'display', 'nome'];
-      let gameColIdx = headers.findIndex(h => targetKeywords.some(k => h.includes(k)));
+      const targetKeywords = [
+        'name',
+        'customname',
+        'jogo',
+        'titulo',
+        'title',
+        'display',
+        'nome',
+      ];
+      let gameColIdx = headers.findIndex((h) =>
+        targetKeywords.some((k) => h.includes(k)),
+      );
       if (gameColIdx === -1) gameColIdx = 0; // Fallback para primeira coluna
 
       const importedGames: string[] = [];
@@ -433,16 +508,25 @@ export function ListView({
       const existingNormalized = new Set<string>();
 
       // Parse do conteúdo atual para evitar duplicatas globais
-      currentContent.split(/\r?\n/).forEach(line => {
-        const clean = line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
-        if (!clean || /^provedor\s*:/i.test(clean) || clean.startsWith('#') || clean.includes('?')) return;
+      currentContent.split(/\r?\n/).forEach((line) => {
+        const clean = line
+          .replace(/^\uFEFF/, '')
+          .replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '')
+          .trim();
+        if (
+          !clean ||
+          /^provedor\s*:/i.test(clean) ||
+          clean.startsWith('#') ||
+          clean.includes('?')
+        )
+          return;
         existingNormalized.add(normalizeGameName(clean));
       });
 
       const newGamesToAdd: string[] = [];
       const seenInCsv = new Set<string>();
 
-      importedGames.forEach(game => {
+      importedGames.forEach((game) => {
         const norm = normalizeGameName(game);
         // Validação tripla: existe no CSV? Já existe na lista.txt? Já vimos nesta importação?
         if (norm && !existingNormalized.has(norm) && !seenInCsv.has(norm)) {
@@ -452,22 +536,26 @@ export function ListView({
       });
 
       if (newGamesToAdd.length === 0) {
-        alert("Nenhum jogo novo encontrado. Todos os itens já constam na lista ou estão duplicados no arquivo.");
+        alert(
+          'Nenhum jogo novo encontrado. Todos os itens já constam na lista ou estão duplicados no arquivo.',
+        );
       } else {
         // Popula o modal de adição com os jogos filtrados para revisão do usuário
         setGamesInput(newGamesToAdd.join('\n'));
         setIsAddModalOpen(true);
 
-        window.dispatchEvent(new CustomEvent("thumbsync-show-notification", {
-          detail: {
-            title: "CSV Processado 📂",
-            message: `${newGamesToAdd.length} jogos únicos filtrados e prontos para adicionar.`,
-          }
-        }));
+        window.dispatchEvent(
+          new CustomEvent('thumbsync-show-notification', {
+            detail: {
+              title: 'CSV Processado 📂',
+              message: `${newGamesToAdd.length} jogos únicos filtrados e prontos para adicionar.`,
+            },
+          }),
+        );
       }
     } catch (err) {
-      console.error("Erro ao importar CSV:", err);
-      alert("Erro ao processar o arquivo CSV.");
+      console.error('Erro ao importar CSV:', err);
+      alert('Erro ao processar o arquivo CSV.');
     } finally {
       setIsLoading(false);
       e.target.value = ''; // Reset input
@@ -486,7 +574,10 @@ export function ListView({
     }
   };
 
-  const handleRemoveGame = async (providerName: string, gameDisplayName: string) => {
+  const handleRemoveGame = async (
+    providerName: string,
+    gameDisplayName: string,
+  ) => {
     setIsLoading(true);
     try {
       const currentContent = await getCurrentListContent();
@@ -509,13 +600,21 @@ export function ListView({
           continue;
         }
 
-        const cleanLine = line.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
-        if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+        const cleanLine = line
+          .replace(/^\uFEFF/, '')
+          .replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '')
+          .trim();
+        if (
+          !cleanLine ||
+          cleanLine.startsWith('#') ||
+          cleanLine.includes('?')
+        ) {
           continue;
         }
 
         if (
-          normalizeGameName(activeProvider) === normalizeGameName(providerName) &&
+          normalizeGameName(activeProvider) ===
+          normalizeGameName(providerName) &&
           normalizeGameName(cleanLine) === normalizeGameName(gameDisplayName)
         ) {
           targetIndex = i;
@@ -555,8 +654,11 @@ export function ListView({
         // Build a lookup set of provider::game for delivered games
         const deliveredKeys = new Set(
           (gameListData?.readyGames || []).map((g: any) =>
-            createProviderGameKey(g.providerName || 'Sem provedor', g.normalized || normalizeGameName(g.displayName))
-          )
+            createProviderGameKey(
+              g.providerName || 'Sem provedor',
+              g.normalized || normalizeGameName(g.displayName),
+            ),
+          ),
         );
 
         for (let i = 0; i < lines.length; i++) {
@@ -570,13 +672,23 @@ export function ListView({
             continue;
           }
 
-          const cleanLine = trimmed.replace(/^\uFEFF/, '').replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '').trim();
-          if (!cleanLine || cleanLine.startsWith('#') || cleanLine.includes('?')) {
+          const cleanLine = trimmed
+            .replace(/^\uFEFF/, '')
+            .replace(/^\s*(?:[-*•]\s+|\d+\s*[\).\]-]\s*)/, '')
+            .trim();
+          if (
+            !cleanLine ||
+            cleanLine.startsWith('#') ||
+            cleanLine.includes('?')
+          ) {
             updatedLines.push(line);
             continue;
           }
 
-          const gameKey = createProviderGameKey(activeProvider, normalizeGameName(cleanLine));
+          const gameKey = createProviderGameKey(
+            activeProvider,
+            normalizeGameName(cleanLine),
+          );
           if (deliveredKeys.has(gameKey)) {
             // This is a delivered game, so filter it out (do NOT push to updatedLines)
             continue;
@@ -620,7 +732,11 @@ export function ListView({
   };
 
   const handleAddGamesSubmit = async () => {
-    const provider = (selectedProviderOption === 'outro' ? customProviderInput : selectedProviderOption).trim();
+    const provider = (
+      selectedProviderOption === 'outro'
+        ? customProviderInput
+        : selectedProviderOption
+    ).trim();
     const cleanGamesText = gamesInput.trim();
     if (!cleanGamesText) return;
 
@@ -686,8 +802,15 @@ export function ListView({
             }
           }
 
-          let insertIndex = firstProviderIndex === -1 ? lines.length : firstProviderIndex;
-          for (let i = (firstProviderIndex === -1 ? lines.length : firstProviderIndex) - 1; i >= 0; i--) {
+          let insertIndex =
+            firstProviderIndex === -1 ? lines.length : firstProviderIndex;
+          for (
+            let i =
+              (firstProviderIndex === -1 ? lines.length : firstProviderIndex) -
+              1;
+            i >= 0;
+            i--
+          ) {
             if (lines[i].trim() !== '') {
               insertIndex = i + 1;
               break;
@@ -798,32 +921,47 @@ export function ListView({
     return { keys, names };
   }, [recordsData]);
 
-  const exportPendingList = () => {
-    const totalPending = gameListData?.remainingGames?.length || 0;
-    if (totalPending === 0) {
-      alert("Nenhum jogo pendente para exportar!");
-      return;
-    }
+  const exportPendingList = async () => {
+    // Exporta todos os jogos encontrados na pasta de destino (arquivos .webp)
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/analyze');
+      if (!res.ok) throw new Error('Erro ao consultar dados do servidor');
+      const data = await res.json();
+      const providers = data?.recordsData?.providers || [];
 
-    let fileContent = "";
-    remainingGroups.forEach((group: any) => {
-      const providerName = group.providerName || "Sem provedor";
-      if (normalizeGameName(providerName) !== normalizeGameName("Sem provedor")) {
-        fileContent += `Provedor: ${providerName}\r\n`;
-      }
-      group.games?.forEach((game: any) => {
-        fileContent += `${game.displayName || game.normalized}\r\n`;
+      const lines: string[] = [];
+      providers.forEach((prov: any) => {
+        const providerName = prov.providerName || 'Sem provedor';
+        (prov.games || []).forEach((g: any) => {
+          const gameName = (g.displayName || g.fileName || '')
+            .replace(/\.webp$/i, '')
+            .trim();
+          if (gameName) lines.push(`${gameName} — ${providerName}`);
+        });
       });
-      fileContent += "\r\n";
-    });
 
-    const blob = new Blob([fileContent.trim()], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "lista-de-pendentes.txt";
-    link.click();
-    URL.revokeObjectURL(url);
+      if (lines.length === 0) {
+        alert('Nenhum arquivo .webp encontrado no destino!');
+        return;
+      }
+
+      const fileContent = lines.join('\r\n');
+      const blob = new Blob([fileContent], {
+        type: 'text/plain;charset=utf-8',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'lista-de-todos-jogos.txt';
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erro ao exportar lista de jogos:', err);
+      alert('Falha ao gerar a lista. Veja o console para mais detalhes.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -834,16 +972,17 @@ export function ListView({
             Gestão da Lista
           </h1>
           <p className="text-zinc-[#a1a1aa] text-xs sm:text-sm font-semibold tracking-wide">
-            Administre os jogos registrados no acervo mestre da aplicação (lista.txt).
+            Administre os jogos registrados no acervo mestre da aplicação
+            (lista.txt).
           </p>
         </div>
         <button
           onClick={exportPendingList}
-          disabled={!gameListData?.remainingGames?.length}
+          disabled={!recordsData?.totalGames}
           className="glass-btn-secondary min-h-[44px] !py-2.5 !px-5 flex items-center justify-center gap-2.5 cursor-pointer text-xs sm:text-sm font-bold disabled:opacity-45 disabled:hover:shadow-none w-full sm:w-auto rounded-xl shadow-md"
         >
           <Download className="w-4 h-4 text-zinc-450 shrink-0" />
-          <span>Exportar Pendentes</span>
+          <span>Exportar Todos os Jogos</span>
         </button>
       </div>
 
@@ -856,7 +995,10 @@ export function ListView({
               Modo Local Ativo — Servidor Desconectado 💻
             </h4>
             <p className="text-[10px] text-zinc-400 font-semibold tracking-wide leading-relaxed">
-              Você pode adicionar, excluir ou editar jogos livremente. O acervo local atualizará em tempo real no seu celular, e as modificações serão enviadas ao computador assim que ele for ligado e reatar conexão!
+              Você pode adicionar, excluir ou editar jogos livremente. O acervo
+              local atualizará em tempo real no seu celular, e as modificações
+              serão enviadas ao computador assim que ele for ligado e reatar
+              conexão!
             </p>
           </div>
         </div>
@@ -870,7 +1012,8 @@ export function ListView({
               Sincronizando Alterações com o Servidor... ⏳
             </h4>
             <p className="text-[10px] text-zinc-400 font-semibold tracking-wide leading-relaxed">
-              Enviando as alterações feitas recentemente no Modo Offline de volta para o computador.
+              Enviando as alterações feitas recentemente no Modo Offline de
+              volta para o computador.
             </p>
           </div>
         </div>
@@ -904,14 +1047,19 @@ export function ListView({
                 </button>
                 <button
                   type="button"
-                  onClick={() => document.getElementById('csv-import-input')?.click()}
+                  onClick={() =>
+                    document.getElementById('csv-import-input')?.click()
+                  }
                   className="glass-btn-secondary min-h-[44px] py-2 px-3 sm:py-2.5 sm:px-4 text-[11px] sm:text-xs font-bold cursor-pointer flex-1 sm:flex-initial flex items-center justify-center gap-1.5 shrink-0 rounded-xl"
                 >
                   <Upload className="w-4 h-4 shrink-0" />
                   <span>Importar CSV</span>
                   <input
-                    type="file" id="csv-import-input" accept=".csv"
-                    className="hidden" onChange={handleCsvImport}
+                    type="file"
+                    id="csv-import-input"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleCsvImport}
                   />
                 </button>
                 <button
@@ -993,15 +1141,17 @@ export function ListView({
             ) : (
               <div className="flex-1 p-3 sm:p-4 md:p-5 bg-[#0c0c0f]/40 text-gray-400 text-xs flex flex-col">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6 flex-1">
-
                   {/* Seção Prontos */}
-                  <div className={`flex flex-col ${activeListTab === 'ready' ? 'flex' : 'hidden md:flex'}`}>
+                  <div
+                    className={`flex flex-col ${activeListTab === 'ready' ? 'flex' : 'hidden md:flex'}`}
+                  >
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#0a84ff] shrink-0 text-xs sm:text-sm">
                       <CheckCircle className="w-4 h-4 shrink-0" />
                       Prontos ({gameListData.completedGames})
                     </h4>
                     <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-2 px-3 rounded-xl flex-shrink-0 leading-relaxed font-sans font-semibold">
-                      Jogos que constam na lista.txt e já possuem miniatura correspondente no acervo.
+                      Jogos que constam na lista.txt e já possuem miniatura
+                      correspondente no acervo.
                     </p>
                     <div className="space-y-2.5 pr-1.5 overflow-y-auto max-h-[60vh] md:max-h-[560px] custom-scrollbar pb-6">
                       {readyGroups.map((group: any, groupIndex: number) => (
@@ -1023,13 +1173,16 @@ export function ListView({
                   </div>
 
                   {/* Seção Faltando */}
-                  <div className={`flex flex-col ${activeListTab === 'pending' ? 'flex' : 'hidden md:flex'}`}>
+                  <div
+                    className={`flex flex-col ${activeListTab === 'pending' ? 'flex' : 'hidden md:flex'}`}
+                  >
                     <h4 className="font-extrabold mb-1.5 flex items-center gap-2 text-[#ff9f0a] shrink-0 text-xs sm:text-sm">
                       <Clock className="w-4 h-4 shrink-0" />
                       Faltando ({gameListData.remainingGames?.length || 0})
                     </h4>
                     <p className="text-[10px] md:text-[11px] text-zinc-500 mb-3 bg-zinc-950/30 border border-white/[0.02] py-2 px-3 rounded-xl flex-shrink-0 leading-relaxed font-sans font-semibold">
-                      Jogos na lista.txt sem imagem correspondente na pasta de origem local.
+                      Jogos na lista.txt sem imagem correspondente na pasta de
+                      origem local.
                     </p>
                     <div className="space-y-2.5 pr-1.5 overflow-y-auto max-h-[60vh] md:max-h-[560px] custom-scrollbar pb-6">
                       {remainingGroups.map((group: any, groupIndex: number) => (
@@ -1048,7 +1201,6 @@ export function ListView({
                       )}
                     </div>
                   </div>
-
                 </div>
               </div>
             )}
@@ -1056,195 +1208,219 @@ export function ListView({
         </GlassCard>
       </div>
 
-      {isAddModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
-          <div className="relative w-full max-w-lg acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center pb-3.5 border-b border-white/[0.05]">
-              <h3 className="font-extrabold text-base flex items-center gap-2 text-white font-sans">
-                <Plus className="w-5 h-5 text-[#0a84ff]" />
-                Adicionar em Lote por Provedor
-              </h3>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProviderOption('Sem provedor');
-                  setCustomProviderInput('');
-                  setGamesInput('');
-                  setIsAddModalOpen(false);
-                }}
-                className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4.5 py-2">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-zinc-400 block font-sans">
-                  Nome do Provedor
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedProviderOption}
-                    onChange={(e) => {
-                      setSelectedProviderOption(e.target.value);
-                      if (e.target.value !== 'outro') {
-                        setCustomProviderInput('');
-                      }
-                    }}
-                    className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    {uniqueProviders.map((prov) => (
-                      <option key={prov} value={prov} className="bg-zinc-900 text-white">
-                        {prov === 'Sem provedor' ? 'Sem provedor (Geral)' : prov}
-                      </option>
-                    ))}
-                    <option value="outro" className="bg-zinc-900 text-white">
-                      ✨ Outro (Digitar manualmente...)
-                    </option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
-                    <ChevronDown className="w-4 h-4" />
-                  </div>
-                </div>
-
-                {selectedProviderOption === 'outro' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="mt-2.5"
-                  >
-                    <input
-                      type="text"
-                      placeholder="Ex: Pragmatic Play, PG Soft, etc."
-                      value={customProviderInput}
-                      onChange={(e) => setCustomProviderInput(e.target.value)}
-                      className="w-full bg-white/[0.04] border border-white/[0.12] hover:border-white/20 focus:border-[#0a84ff] hover:bg-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none transition-all"
-                    />
-                  </motion.div>
-                )}
-
-                <p className="text-[10px] text-zinc-500 font-medium font-sans leading-relaxed">
-                  Escolha um provedor do acervo mestre ou selecione "Outro" para definir um novo provedor.
-                </p>
+      {isAddModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
+            <div className="relative w-full max-w-lg acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center pb-3.5 border-b border-white/[0.05]">
+                <h3 className="font-extrabold text-base flex items-center gap-2 text-white font-sans">
+                  <Plus className="w-5 h-5 text-[#0a84ff]" />
+                  Adicionar em Lote por Provedor
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProviderOption('Sem provedor');
+                    setCustomProviderInput('');
+                    setGamesInput('');
+                    setIsAddModalOpen(false);
+                  }}
+                  className="p-1 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.05] transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="space-y-2 flex-1 flex flex-col">
-                <label className="text-xs font-bold text-zinc-400 block font-sans">
-                  Jogos (um por linha)
-                </label>
-                <textarea
-                  rows={7}
-                  placeholder={`Digite um jogo por linha, exemplo:
+              <div className="space-y-4.5 py-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-400 block font-sans">
+                    Nome do Provedor
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedProviderOption}
+                      onChange={(e) => {
+                        setSelectedProviderOption(e.target.value);
+                        if (e.target.value !== 'outro') {
+                          setCustomProviderInput('');
+                        }
+                      }}
+                      className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
+                    >
+                      {uniqueProviders.map((prov) => (
+                        <option
+                          key={prov}
+                          value={prov}
+                          className="bg-zinc-900 text-white"
+                        >
+                          {prov === 'Sem provedor'
+                            ? 'Sem provedor (Geral)'
+                            : prov}
+                        </option>
+                      ))}
+                      <option value="outro" className="bg-zinc-900 text-white">
+                        ✨ Outro (Digitar manualmente...)
+                      </option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-400">
+                      <ChevronDown className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  {selectedProviderOption === 'outro' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-2.5"
+                    >
+                      <input
+                        type="text"
+                        placeholder="Ex: Pragmatic Play, PG Soft, etc."
+                        value={customProviderInput}
+                        onChange={(e) => setCustomProviderInput(e.target.value)}
+                        className="w-full bg-white/[0.04] border border-white/[0.12] hover:border-white/20 focus:border-[#0a84ff] hover:bg-white/[0.06] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none transition-all"
+                      />
+                    </motion.div>
+                  )}
+
+                  <p className="text-[10px] text-zinc-500 font-medium font-sans leading-relaxed">
+                    Escolha um provedor do acervo mestre ou selecione "Outro"
+                    para definir um novo provedor.
+                  </p>
+                </div>
+
+                <div className="space-y-2 flex-1 flex flex-col">
+                  <label className="text-xs font-bold text-zinc-400 block font-sans">
+                    Jogos (um por linha)
+                  </label>
+                  <textarea
+                    rows={7}
+                    placeholder={`Digite um jogo por linha, exemplo:
 Sweet Bonanza
 Gates of Olympus
 Sugar Rush`}
-                  value={gamesInput}
-                  onChange={(e) => setGamesInput(e.target.value)}
-                  className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 font-mono focus:outline-none transition-all resize-y custom-scrollbar"
-                />
+                    value={gamesInput}
+                    onChange={(e) => setGamesInput(e.target.value)}
+                    className="w-full bg-white/[0.03] border border-white/[0.08] hover:border-white/15 focus:border-[#0a84ff] focus:bg-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 font-mono focus:outline-none transition-all resize-y custom-scrollbar"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3.5 border-t border-white/[0.05] select-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProviderOption('Sem provedor');
+                    setCustomProviderInput('');
+                    setGamesInput('');
+                    setIsAddModalOpen(false);
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.05] text-white text-xs font-bold transition-all cursor-pointer active:scale-95"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddGamesSubmit}
+                  disabled={isSavingMulti || !gamesInput.trim()}
+                  className="glass-btn-primary !py-2 !px-4 text-xs font-black cursor-pointer"
+                >
+                  {isSavingMulti ? 'Salvando...' : 'Adicionar e Salvar'}
+                </button>
               </div>
             </div>
+          </div>,
+          document.body,
+        )}
 
-            <div className="flex justify-end gap-3 pt-3.5 border-t border-white/[0.05] select-none">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProviderOption('Sem provedor');
-                  setCustomProviderInput('');
-                  setGamesInput('');
-                  setIsAddModalOpen(false);
-                }}
-                className="px-4 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.05] text-white text-xs font-bold transition-all cursor-pointer active:scale-95"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleAddGamesSubmit}
-                disabled={isSavingMulti || !gamesInput.trim()}
-                className="glass-btn-primary !py-2 !px-4 text-xs font-black cursor-pointer"
-              >
-                {isSavingMulti ? 'Salvando...' : 'Adicionar e Salvar'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {isClearModalOpen && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
-          <div className="relative w-full max-w-md acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-5">
-            <div className="flex items-center gap-3 text-[#ff453a]">
-              <div className="p-2.5 bg-[#ff453a]/10 border border-[#ff453a]/15 rounded-xl">
-                <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
+      {isClearModalOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 backdrop-blur-md p-4 animate-fade-in">
+            <div className="relative w-full max-w-md acrylic border border-white/[0.08] rounded-2xl p-6 shadow-2xl flex flex-col gap-5">
+              <div className="flex items-center gap-3 text-[#ff453a]">
+                <div className="p-2.5 bg-[#ff453a]/10 border border-[#ff453a]/15 rounded-xl">
+                  <Trash2 className="w-5 h-5 sm:w-6 sm:h-6" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base text-white font-sans">
+                    Limpar Catalogação
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 font-semibold font-sans mt-0.5">
+                    Confirmar alteração em lista.txt
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-extrabold text-base text-white font-sans">
-                  Limpar Catalogação
-                </h3>
-                <p className="text-[11px] text-zinc-400 font-semibold font-sans mt-0.5">
-                  Confirmar alteração em lista.txt
+
+              <div className="space-y-2 text-xs text-zinc-300 font-sans leading-relaxed">
+                <p>
+                  Como deseja realizar a limpeza da lista? Você pode excluir
+                  tudo ou manter os faltantes removendo apenas os itens já
+                  entregues.
                 </p>
+                <div className="p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] space-y-1 mt-1 text-[11px]">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Total na lista:</span>
+                    <span className="font-extrabold text-white">
+                      {gameListData?.totalListedGames || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">
+                      Já entregues (Prontos):
+                    </span>
+                    <span className="font-extrabold text-[#0a84ff]">
+                      {gameListData?.completedGames || 0}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Restantes (Faltando):</span>
+                    <span className="font-extrabold text-[#ff9f0a]">
+                      {gameListData?.remainingGames?.length || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2.5 select-none pt-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleClearList('delivered')}
+                  disabled={isClearing || !gameListData?.completedGames}
+                  className="w-full bg-[#0a84ff]/10 hover:bg-[#0a84ff]/20 border border-[#0a84ff]/25 active:scale-95 text-[#0a84ff] py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-2 disabled:opacity-40 disabled:scale-100 min-h-[44px]"
+                >
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                  <span>
+                    Limpar apenas Entregues ({gameListData?.completedGames || 0}
+                    )
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleClearList('all')}
+                  disabled={isClearing}
+                  className="w-full bg-[#ff453a] hover:bg-[#ff453a]/90 active:scale-95 text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer text-center flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,69,58,0.2)] disabled:opacity-50 min-h-[44px]"
+                >
+                  <Trash2 className="w-4 h-4 shrink-0" />
+                  <span>
+                    Sim, Limpar tudo ({gameListData?.totalListedGames || 0})
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsClearModalOpen(false)}
+                  disabled={isClearing}
+                  className="w-full py-3 px-4 rounded-xl border border-white/[0.08] hover:bg-white/[0.05] active:bg-white/[0.1] text-zinc-300 font-bold text-xs sm:text-sm transition-all cursor-pointer text-center min-h-[44px]"
+                >
+                  Cancelar
+                </button>
               </div>
             </div>
-
-            <div className="space-y-2 text-xs text-zinc-300 font-sans leading-relaxed">
-              <p>
-                Como deseja realizar a limpeza da lista? Você pode excluir tudo ou manter os faltantes removendo apenas os itens já entregues.
-              </p>
-              <div className="p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] space-y-1 mt-1 text-[11px]">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Total na lista:</span>
-                  <span className="font-extrabold text-white">{gameListData?.totalListedGames || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Já entregues (Prontos):</span>
-                  <span className="font-extrabold text-[#0a84ff]">{gameListData?.completedGames || 0}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Restantes (Faltando):</span>
-                  <span className="font-extrabold text-[#ff9f0a]">{gameListData?.remainingGames?.length || 0}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2.5 select-none pt-2.5">
-              <button
-                type="button"
-                onClick={() => handleClearList('delivered')}
-                disabled={isClearing || !gameListData?.completedGames}
-                className="w-full bg-[#0a84ff]/10 hover:bg-[#0a84ff]/20 border border-[#0a84ff]/25 active:scale-95 text-[#0a84ff] py-3 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-2 disabled:opacity-40 disabled:scale-100 min-h-[44px]"
-              >
-                <CheckCircle className="w-4 h-4 shrink-0" />
-                <span>Limpar apenas Entregues ({gameListData?.completedGames || 0})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleClearList('all')}
-                disabled={isClearing}
-                className="w-full bg-[#ff453a] hover:bg-[#ff453a]/90 active:scale-95 text-white py-3 px-4 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer text-center flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(255,69,58,0.2)] disabled:opacity-50 min-h-[44px]"
-              >
-                <Trash2 className="w-4 h-4 shrink-0" />
-                <span>Sim, Limpar tudo ({gameListData?.totalListedGames || 0})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsClearModalOpen(false)}
-                disabled={isClearing}
-                className="w-full py-3 px-4 rounded-xl border border-white/[0.08] hover:bg-white/[0.05] active:bg-white/[0.1] text-zinc-300 font-bold text-xs sm:text-sm transition-all cursor-pointer text-center min-h-[44px]"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
