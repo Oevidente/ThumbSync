@@ -100,16 +100,52 @@ function getSentGamesCount(gameListData: any, recordsData: any) {
   }).length;
 }
 
+function extractPriorityGroups(groups: any[]) {
+  if (!groups || groups.length === 0) return [];
+  
+  const priorityGames: any[] = [];
+  const normalGroups: any[] = [];
+
+  groups.forEach((group: any) => {
+    const normalGames: any[] = [];
+    (group.games || []).forEach((game: any) => {
+      const name = game.displayName || game.normalized || '';
+      if (name.includes('!')) {
+        priorityGames.push({
+          ...game,
+          providerName: game.providerName || group.providerName
+        });
+      } else {
+        normalGames.push(game);
+      }
+    });
+
+    if (normalGames.length > 0) {
+      normalGroups.push({ ...group, games: normalGames });
+    }
+  });
+
+  if (priorityGames.length > 0) {
+    return [
+      { providerName: '⚠️ Prioridade', games: priorityGames, isPriority: true },
+      ...normalGroups
+    ];
+  }
+  
+  return normalGroups;
+}
+
 function getProviderGroups(
   gameListData: any,
   groupedKey: string,
   flatKey: string,
 ) {
-  const groups = gameListData?.[groupedKey];
-  if (groups?.length) return groups;
-
-  const games = gameListData?.[flatKey];
-  return games?.length ? [{ providerName: 'Sem provedor', games }] : [];
+  let groups = gameListData?.[groupedKey];
+  if (!groups?.length) {
+    const games = gameListData?.[flatKey];
+    groups = games?.length ? [{ providerName: 'Sem provedor', games }] : [];
+  }
+  return extractPriorityGroups(groups);
 }
 
 const gameFamilyCollator = new Intl.Collator('pt-BR', {
@@ -178,7 +214,7 @@ function DashboardProviderGroupItem({
     <div className="space-y-2">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] px-3.5 py-2.5 font-sans text-xs ${toneClasses.header} backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none`}
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.04] px-3.5 py-2.5 font-sans text-xs ${group.isPriority ? 'text-rose-500' : toneClasses.header} backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none`}
       >
         <span className="font-semibold truncate flex items-center gap-2">
           {isExpanded ? (
@@ -186,10 +222,10 @@ function DashboardProviderGroupItem({
           ) : (
             <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
           )}
-          Provedor: <span className="text-white font-bold">{group.providerName}</span>
+          {group.isPriority ? 'Categoria:' : 'Provedor:'} <span className="text-white font-bold">{group.providerName}</span>
         </span>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${toneClasses.badge}`}
+          className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${group.isPriority ? 'bg-rose-500/10 text-rose-500 border border-rose-500/15' : toneClasses.badge}`}
         >
           {group.games?.length || 0}
         </span>
@@ -222,18 +258,19 @@ function DashboardProviderGroupItem({
                 key={`${title}-${group.providerName}-${game.displayName}-${i}`}
                 className={`group relative flex items-center justify-between py-2 pl-3 pr-9 rounded-lg border text-xs font-semibold font-sans shadow-sm transition-all duration-200 hover:translate-x-0.5 ${itemClasses}`}
               >
-                <span className="truncate flex-1 pr-1">{game.displayName}</span>
+                <span className="truncate flex-1 pr-1">{game.displayName.replace(/!/g, '').trim()}</span>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    navigator.clipboard.writeText(game.displayName);
+                    const cleanName = game.displayName.replace(/!/g, '').trim();
+                    navigator.clipboard.writeText(cleanName);
                     window.dispatchEvent(
                       new CustomEvent('thumbsync-show-notification', {
                         detail: {
                           title: 'Copiado! 📋',
-                          message: `"${game.displayName}" copiado para a área de transferência.`,
+                          message: `"${cleanName}" copiado para a área de transferência.`,
                         },
                       }),
                     );

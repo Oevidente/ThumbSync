@@ -115,17 +115,18 @@ function GameSearchLink({
   providerName: string;
   gameDisplayName: string;
 }) {
-  const href = getGameImageSearchUrl(providerName, gameDisplayName);
+  const cleanName = gameDisplayName.replace(/!/g, '').trim();
+  const href = getGameImageSearchUrl(providerName, cleanName);
 
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
-      title={`Buscar imagens de ${providerName} ${gameDisplayName}`}
+      title={`Buscar imagens de ${providerName} ${cleanName}`}
       className="min-w-0 flex-1 truncate pr-1 rounded text-current underline-offset-4 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
     >
-      {gameDisplayName}
+      {cleanName}
     </a>
   );
 }
@@ -155,7 +156,7 @@ function ListViewProviderGroup({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] active:bg-white/[0.07] border border-white/[0.04] px-4 py-3.5 font-sans text-xs sm:text-sm ${isReadySection ? 'text-[#0a84ff]' : 'text-[#ff9f0a]'
+        className={`sticky top-0 z-10 w-full flex items-center justify-between gap-3 rounded-2xl bg-white/[0.02] hover:bg-white/[0.05] active:bg-white/[0.07] border border-white/[0.04] px-4 py-3.5 font-sans text-xs sm:text-sm ${group.isPriority ? 'text-rose-500' : isReadySection ? 'text-[#0a84ff]' : 'text-[#ff9f0a]'
           } backdrop-blur-md text-left cursor-pointer transition-all duration-200 select-none min-h-[44px]`}
       >
         <span className="font-bold truncate flex items-center gap-2">
@@ -164,11 +165,13 @@ function ListViewProviderGroup({
           ) : (
             <ChevronRight className="w-4 h-4 text-zinc-500 shrink-0" />
           )}
-          Provedor:{' '}
+          {group.isPriority ? 'Categoria:' : 'Provedor:'}{' '}
           <span className="text-white font-black">{group.providerName}</span>
         </span>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${isReadySection
+          className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] sm:text-xs font-black ${group.isPriority 
+              ? 'bg-rose-500/10 text-rose-500 border border-rose-500/15'
+              : isReadySection
               ? 'bg-[#0a84ff]/10 text-[#0a84ff] border border-[#0a84ff]/15'
               : 'bg-[#ff9f0a]/10 text-[#ff9f0a] border border-[#ff9f0a]/15'
             }`}
@@ -217,12 +220,13 @@ function ListViewProviderGroup({
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        navigator.clipboard.writeText(game.displayName);
+                        const cleanName = game.displayName.replace(/!/g, '').trim();
+                        navigator.clipboard.writeText(cleanName);
                         window.dispatchEvent(
                           new CustomEvent('thumbsync-show-notification', {
                             detail: {
                               title: 'Copiado! 📋',
-                              message: `"${game.displayName}" copiado para a área de transferência.`,
+                              message: `"${cleanName}" copiado para a área de transferência.`,
                             },
                           }),
                         );
@@ -299,6 +303,41 @@ function ListViewProviderGroup({
       )}
     </div>
   );
+}
+
+function extractPriorityGroups(groups: any[]) {
+  if (!groups || groups.length === 0) return [];
+  
+  const priorityGames: any[] = [];
+  const normalGroups: any[] = [];
+
+  groups.forEach((group: any) => {
+    const normalGames: any[] = [];
+    (group.games || []).forEach((game: any) => {
+      const name = game.displayName || game.normalized || '';
+      if (name.includes('!')) {
+        priorityGames.push({
+          ...game,
+          providerName: game.providerName || group.providerName
+        });
+      } else {
+        normalGames.push(game);
+      }
+    });
+
+    if (normalGames.length > 0) {
+      normalGroups.push({ ...group, games: normalGames });
+    }
+  });
+
+  if (priorityGames.length > 0) {
+    return [
+      { providerName: '⚠️ Prioridade', games: priorityGames, isPriority: true },
+      ...normalGroups
+    ];
+  }
+  
+  return normalGroups;
 }
 
 export function ListView({
@@ -879,16 +918,19 @@ export function ListView({
 
   if (!gameListData) return null;
 
-  const remainingGroups =
+  const remainingGroupsRaw =
     gameListData.remainingGamesByProvider ??
     (gameListData.remainingGames?.length
       ? [{ providerName: 'Sem provedor', games: gameListData.remainingGames }]
       : []);
-  const readyGroups =
+  const readyGroupsRaw =
     gameListData.readyGamesByProvider ??
     (gameListData.readyGames?.length
       ? [{ providerName: 'Sem provedor', games: gameListData.readyGames }]
       : []);
+
+  const remainingGroups = useMemo(() => extractPriorityGroups(remainingGroupsRaw), [remainingGroupsRaw]);
+  const readyGroups = useMemo(() => extractPriorityGroups(readyGroupsRaw), [readyGroupsRaw]);
 
   const sentData = useMemo(() => {
     const keys = new Set<string>();
