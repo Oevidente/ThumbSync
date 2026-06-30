@@ -788,7 +788,7 @@ function analyzeFileSyncStatus(sourcePath: string, destPath: string) {
 }
 
 function normalizeGameName(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.webp$/i, '').replace(/:/g, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\.webp$/i, '').replace(/[!:]/g, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 function cleanGameListLine(line: string) {

@@ -24,7 +24,7 @@ function normalizeGameName(value = '') {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\.webp$/i, '')
-    .replace(/:/g, '')
+    .replace(/[!:]/g, '')
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
